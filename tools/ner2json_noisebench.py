@@ -4,7 +4,8 @@ noise_types =['noisy_bond', 'noisy_fabricator', 'noisy_mv_oracle', 'noisy_mv', '
 file_type = ["train", "dev"]
 wf_type = open("conll03_types.json","w")
 types={"entities":{},"relations":{}}
-original_path='../data/datasets/noisebench'
+# original_path='../data/datasets/noisebench'
+original_path='/Users/teresaloffelhardt/OneDrive/WorkSCIoI/Datasets/NoiseBench_old-format'     # später innerhalb repos
 
 ner_column_id = 1
 

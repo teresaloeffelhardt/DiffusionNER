@@ -2,7 +2,7 @@ import json
 import math
 import random
 from transformers import BertConfig, BertTokenizer
-from diffusionner import modeling_bert
+from diffusionner.modeling_bert import BertEmbeddings as DiffusionNERBertEmbeddings
 import torch
 
 
@@ -32,15 +32,15 @@ def match_entities(data, lmbda):
         for entity in doc["entities"]:
             entity_id += 1
             matched_data[f"doc_{doc_id}"][f"entity_{entity_id}"] = {"text": " ".join(doc["tokens"][entity["start"]:entity["end"]]),
-                                                                    "label": entity["label"],
+                                                                    "label": entity["type"],
                                                                     "start": entity["start"],
                                                                     "end": entity["end"]}
             pos_entities.append((entity["start"], entity["end"]))          
 
         for i in range(len(doc["tokens"])):
-            for j in range(len(doc["tokens"])):                  # Länge der Entität begrenzen?
-                if (i,j) not in pos_entities:
-                    neg_entities.append((i,j))
+            for j in range(1, 4):
+                if i+j < len(doc["tokens"]) and (i, i+j) not in pos_entities:
+                    neg_entities.append((i, i+j))
 
         negative_sampling_doc(doc, matched_data, doc_id, neg_entities, lmbda, last_entity_id=entity_id)    
 
@@ -65,17 +65,17 @@ def similarity_embedding(matched_data):
     
     bert_config = BertConfig.from_pretrained('bert-large-cased')         
     bert_tokenizer = BertTokenizer.from_pretrained('bert-large-cased')
-    bert_embeddings = modeling_bert.BertEmbeddings(bert_config)
+    bert_embeddings = DiffusionNERBertEmbeddings(bert_config)
 
     for doc_id in matched_data:
-        entities_embds = torch.empty(len(matched_data[doc_id]))
+        entities_embds = torch.empty(len(matched_data[doc_id]), 1024)       # findet speicherung/zugriff in folge richtig statt?
 
         i = 0
         for entity_id in matched_data[doc_id]:
             entity_token_ids = torch.tensor(bert_tokenizer.encode(matched_data[doc_id][entity_id]["text"], add_special_tokens=True)).unsqueeze(0)
             with torch.no_grad():
                 entity_embedding = bert_embeddings(input_ids=entity_token_ids)
-            entity_cls_embedding = entity_embedding[:, 0, :]
+            entity_cls_embedding = entity_embedding[:, 0, :].unsqueeze(0)                   # nochmal überprüfen
 
             matched_data[doc_id][entity_id]["embedding"] = entity_cls_embedding
             matched_data[doc_id][entity_id]["index"] = i
@@ -102,7 +102,7 @@ def knn(matched_data, k):
             entity_knn_labels_vec = torch.tensor(entity_knn_labels)
             mode_value, _ = torch.mode(entity_knn_labels_vec)
 
-            matched_data[doc_id][entity_id]["label"] = mode_value.item()
+            matched_data[doc_id][entity_id]["label"] = mode_value.item()        # konditionieren? - weniger write/runtime?
 
 
 def write_json(matched_data, data, data_file):
@@ -121,15 +121,24 @@ def write_json(matched_data, data, data_file):
                                         "end": matched_data[entity_id]["end"],
                                         "type": matched_data[entity_id]["label"]})
         
-    with open(data_file, 'w') as data_file:
-        json.dump(data, data_file, indent=4)
+    with open(f"{data_file}_lr", 'w') as data_file:
+        json.dump(data, f"{data_file}_lr", indent=4)
 
 
 
 def label_retrieval(data_file):
 
     data = read_json(data_file)
-    matched_data = match_entities(data, lmbda=0.35)
+    matched_data = match_entities(data, lmbda=0.1)
     similarity_embedding(matched_data)
-    knn(matched_data, k=10)
+    knn(matched_data, k=3)
     write_json(matched_data, data, data_file)
+
+
+def main():
+    data_file = "./noisebench/conll03_clean_train.json"
+    label_retrieval(data_file)
+
+
+if __name__ == "__main__":
+    main()
