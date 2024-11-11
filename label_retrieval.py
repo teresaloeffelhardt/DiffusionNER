@@ -4,6 +4,9 @@ import random
 from transformers import BertConfig, BertTokenizer
 from diffusionner.modeling_bert import BertEmbeddings as DiffusionNERBertEmbeddings
 import torch
+from collections import Counter
+
+import pprint
 
 
 def read_json(data_file):
@@ -89,23 +92,26 @@ def knn(matched_data, k):
 
     for doc_id in matched_data:
         for entity_id in matched_data[doc_id]:
-            entity_dist_vector = torch.nn.functional.cosine_similarity(matched_data[doc_id][entity_id]["embedding"], matched_data[doc_id]["embeddings"])
-            _, entity_knn_indices = entity_dist_vector.topk(k, largest=True)
+            if entity_id != "embeddings":
+                entity_dist_vector = torch.nn.functional.cosine_similarity(matched_data[doc_id][entity_id]["embedding"], matched_data[doc_id]["embeddings"])
+                _, entity_knn_indices = entity_dist_vector.topk(k, largest=True)
 
-            entity_knn_labels = []
-            entity_knn_indices_list = entity_knn_indices.tolist()
-            for entity_id_other in matched_data[doc_id]:
-                if matched_data[doc_id][entity_id_other]["index"] in entity_knn_indices_list:
-                    entity_knn_labels.append(matched_data[doc_id][entity_id_other]["label"])
-                    entity_knn_indices_list.remove(matched_data[doc_id][entity_id_other]["index"])
+                entity_knn_labels = []
+                entity_knn_indices_list = entity_knn_indices.tolist()[0]
+                for entity_id_other in matched_data[doc_id]:
+                    if entity_id_other != "embeddings":
+                        if matched_data[doc_id][entity_id_other]["index"] in entity_knn_indices_list:
+                            entity_knn_labels.append(matched_data[doc_id][entity_id_other]["label"])
+                            entity_knn_indices_list.remove(matched_data[doc_id][entity_id_other]["index"])
 
-            entity_knn_labels_vec = torch.tensor(entity_knn_labels)
-            mode_value, _ = torch.mode(entity_knn_labels_vec)
+                if len(entity_knn_labels) != 0:
+                    counter = Counter(entity_knn_labels)
+                    majority_label, _ = counter.most_common(1)[0]
 
-            matched_data[doc_id][entity_id]["label"] = mode_value.item()        # konditionieren? - weniger write/runtime?
+                    matched_data[doc_id][entity_id]["label"] = majority_label         # konditionieren? - weniger write/runtime?
 
 
-def write_json(matched_data, data, data_file):
+def write_json(matched_data, data, data_file_out):
 
     # vergabe von orig_id überprüfen
 
@@ -115,29 +121,31 @@ def write_json(matched_data, data, data_file):
         doc["orig_id"] = str(doc_id)
 
         doc["entities"] = []
-        for entity_id in matched_data:
-            if matched_data[entity_id]["label"] != "O":
-                doc["entities"].append({"start": matched_data[entity_id]["start"],
-                                        "end": matched_data[entity_id]["end"],
-                                        "type": matched_data[entity_id]["label"]})
+        for entity_id in matched_data[f"doc_{doc_id}"]:
+            if entity_id != "embeddings":
+                if matched_data[f"doc_{doc_id}"][entity_id]["label"] != "O":
+                    doc["entities"].append({"start": matched_data[f"doc_{doc_id}"][entity_id]["start"],
+                                            "end": matched_data[f"doc_{doc_id}"][entity_id]["end"],
+                                            "type": matched_data[f"doc_{doc_id}"][entity_id]["label"]})
         
-    with open(f"{data_file}_lr", 'w') as data_file:
-        json.dump(data, f"{data_file}_lr", indent=4)
+    with open(data_file_out, 'w') as data_file_out:
+        json.dump(data, data_file_out, indent=4)
 
 
 
-def label_retrieval(data_file):
+def label_retrieval(data_file_in, data_file_out):
 
-    data = read_json(data_file)
-    matched_data = match_entities(data, lmbda=0.1)
+    data = read_json(data_file_in)
+    matched_data = match_entities(data, lmbda=0)            # Menge von der gesampled wird sehr klein -> Parameter -> oder globaleres Sampling
     similarity_embedding(matched_data)
     knn(matched_data, k=3)
-    write_json(matched_data, data, data_file)
+    write_json(matched_data, data, data_file_out)
 
 
 def main():
-    data_file = "./noisebench/conll03_clean_train.json"
-    label_retrieval(data_file)
+    data_file_in = "./noisebench/conll03_clean_train.json"
+    data_file_out = "./noisebench/conll03_clean_train_lr.json"
+    label_retrieval(data_file_in, data_file_out)
 
 
 if __name__ == "__main__":
