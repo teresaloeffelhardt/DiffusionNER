@@ -22,11 +22,12 @@ def read_json(data_file):
 def match_entities(data, lmbda):
 
     matched_data = {}
+    origins = {}
 
     doc_id = 0
     for doc in data:
         doc_id += 1
-        matched_data[f"doc_{doc_id}"] = {}
+        matched_data[f"doc_{doc_id}"] = {"orig_id": doc["orig_id"]}
         
         pos_entities = []
         neg_entities = []
@@ -45,9 +46,16 @@ def match_entities(data, lmbda):
                 if i+j < len(doc["tokens"]) and (i, i+j) not in pos_entities:
                     neg_entities.append((i, i+j))
 
-        negative_sampling_doc(doc, matched_data, doc_id, neg_entities, lmbda, last_entity_id=entity_id)    
+        negative_sampling_doc(doc, matched_data, doc_id, neg_entities, lmbda, last_entity_id=entity_id)
 
-    return matched_data
+        if doc["orig_id"] in origins:
+            origins[doc["orig_id"]]["docs"].append(f"doc_{doc_id}")
+            origins[doc["orig_id"]]["n_entities"] += len(matched_data[f"doc_{doc_id}"])-1
+        else:
+            origins[doc["orig_id"]] = {"docs": [f"doc_{doc_id}"],
+                                       "n_entities": len(matched_data[f"doc_{doc_id}"])-1}
+
+    return matched_data, origins
             
 
 def negative_sampling_doc(doc, matched_data, doc_id, neg_entities, lmbda, last_entity_id):
@@ -64,51 +72,55 @@ def negative_sampling_doc(doc, matched_data, doc_id, neg_entities, lmbda, last_e
                                                                 "end": j}                          
 
 
-def similarity_embedding(matched_data):
+def similarity_embedding(matched_data, origins):
+
+    # not fine tuned!
     
     bert_config = BertConfig.from_pretrained('bert-large-cased')         
     bert_tokenizer = BertTokenizer.from_pretrained('bert-large-cased')
     bert_embeddings = DiffusionNERBertEmbeddings(bert_config)
 
-    for doc_id in matched_data:
-        entities_embds = torch.empty(len(matched_data[doc_id]), 1024)       # findet speicherung/zugriff in folge richtig statt?
+    for orig_id in origins:
+        origins[orig_id]["embeddings"] = torch.empty(origins[orig_id]["n_entities"], 1024)      # findet speicherung/zugriff in folge richtig statt?
 
         i = 0
-        for entity_id in matched_data[doc_id]:
-            entity_token_ids = torch.tensor(bert_tokenizer.encode(matched_data[doc_id][entity_id]["text"], add_special_tokens=True)).unsqueeze(0)
-            with torch.no_grad():
-                entity_embedding = bert_embeddings(input_ids=entity_token_ids)
-            entity_cls_embedding = entity_embedding[:, 0, :].unsqueeze(0)                   # nochmal überprüfen
+        for doc_id in origins[orig_id]["docs"]:
+            for entity_id in matched_data[doc_id]:
+                if entity_id != "orig_id":
+                    entity_token_ids = torch.tensor(bert_tokenizer.encode(matched_data[doc_id][entity_id]["text"], add_special_tokens=True)).unsqueeze(0)
+                    with torch.no_grad():
+                        entity_embedding = bert_embeddings(input_ids=entity_token_ids)
+                    entity_cls_embedding = entity_embedding[:, 0, :].unsqueeze(0)                   # nochmal überprüfen
 
-            matched_data[doc_id][entity_id]["embedding"] = entity_cls_embedding
-            matched_data[doc_id][entity_id]["index"] = i
-            entities_embds[i] = entity_cls_embedding
-            i+=1
-        
-        matched_data[doc_id]["embeddings"] = entities_embds
+                    matched_data[doc_id][entity_id]["embedding"] = entity_cls_embedding
+                    matched_data[doc_id][entity_id]["index"] = i
+                    origins[orig_id]["embeddings"][i] = entity_cls_embedding
+                    i+=1
 
 
-def knn(matched_data, k):
+def knn(matched_data, origins, k):
 
-    for doc_id in matched_data:
-        for entity_id in matched_data[doc_id]:
-            if entity_id != "embeddings":
-                entity_dist_vector = torch.nn.functional.cosine_similarity(matched_data[doc_id][entity_id]["embedding"], matched_data[doc_id]["embeddings"])
-                _, entity_knn_indices = entity_dist_vector.topk(k, largest=True)
+    for orig_id in origins:
+        for doc_id in origins[orig_id]["docs"]:
+            for entity_id in matched_data[doc_id]:
+                if entity_id != "orig_id":
+                    entity_dist_vector = torch.nn.functional.cosine_similarity(matched_data[doc_id][entity_id]["embedding"], origins[orig_id]["embeddings"])
+                    _, entity_knn_indices = entity_dist_vector.topk(k, largest=True)
 
-                entity_knn_labels = []
-                entity_knn_indices_list = entity_knn_indices.tolist()[0]
-                for entity_id_other in matched_data[doc_id]:
-                    if entity_id_other != "embeddings":
-                        if matched_data[doc_id][entity_id_other]["index"] in entity_knn_indices_list:
-                            entity_knn_labels.append(matched_data[doc_id][entity_id_other]["label"])
-                            entity_knn_indices_list.remove(matched_data[doc_id][entity_id_other]["index"])
+                    entity_knn_labels = []
+                    entity_knn_indices_list = entity_knn_indices.tolist()[0]
+                    for doc_id_other in origins[orig_id]["docs"]:
+                        for entity_id_other in matched_data[doc_id_other]:
+                            if entity_id_other != "orig_id":
+                                if matched_data[doc_id_other][entity_id_other]["index"] in entity_knn_indices_list:
+                                    entity_knn_labels.append(matched_data[doc_id_other][entity_id_other]["label"])
+                                    entity_knn_indices_list.remove(matched_data[doc_id_other][entity_id_other]["index"])
 
-                if len(entity_knn_labels) != 0:
-                    counter = Counter(entity_knn_labels)
-                    majority_label, _ = counter.most_common(1)[0]
+                    if len(entity_knn_labels) != 0:
+                        counter = Counter(entity_knn_labels)
+                        majority_label, _ = counter.most_common(1)[0]
 
-                    matched_data[doc_id][entity_id]["label"] = majority_label         # konditionieren? - weniger write/runtime?
+                        matched_data[doc_id][entity_id]["label"] = majority_label         # konditionieren? - weniger write/runtime?
 
 
 def write_json(matched_data, data, data_file_out):
@@ -118,11 +130,10 @@ def write_json(matched_data, data, data_file_out):
     doc_id = 0
     for doc in data:
         doc_id+=1
-        doc["orig_id"] = str(doc_id)
 
         doc["entities"] = []
         for entity_id in matched_data[f"doc_{doc_id}"]:
-            if entity_id != "embeddings":
+            if entity_id != "embeddings" and entity_id != "orig_id":
                 if matched_data[f"doc_{doc_id}"][entity_id]["label"] != "O":
                     doc["entities"].append({"start": matched_data[f"doc_{doc_id}"][entity_id]["start"],
                                             "end": matched_data[f"doc_{doc_id}"][entity_id]["end"],
@@ -136,9 +147,9 @@ def write_json(matched_data, data, data_file_out):
 def label_retrieval(data_file_in, data_file_out):
 
     data = read_json(data_file_in)
-    matched_data = match_entities(data, lmbda=0)            # Menge von der gesampled wird sehr klein -> Parameter -> oder globaleres Sampling
-    similarity_embedding(matched_data)
-    knn(matched_data, k=3)
+    matched_data, origins = match_entities(data, lmbda=0)            # Menge von der gesampled wird sehr klein -> Parameter -> oder globaleres Sampling
+    similarity_embedding(matched_data, origins)
+    knn(matched_data, origins, k=3)
     write_json(matched_data, data, data_file_out)
 
 
