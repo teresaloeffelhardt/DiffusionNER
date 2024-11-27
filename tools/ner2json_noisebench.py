@@ -66,4 +66,4 @@ for noisy_ty in noise_types:
         json.dump(datasets,wf)
 
 print(len(types["entities"].keys()))
-json.dump(types,wf_type)
+json.dump(types,wf_type,indent=4)

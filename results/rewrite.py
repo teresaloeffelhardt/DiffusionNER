@@ -15,8 +15,8 @@ def write_json(data, data_file_out):
 
 
 def main():
-    data_file_in = "./noisebench/conll03_clean_train.json"
-    data_file_out = "./noisebench/conll03_clean_train_re.json"
+    data_file_in = "./noisebench/conll03_noisy_wrench_train.json"
+    data_file_out = data_file_in
     data = read_json(data_file_in)
     write_json(data, data_file_out)
 
