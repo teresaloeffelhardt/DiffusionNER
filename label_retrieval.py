@@ -79,10 +79,11 @@ def similarity_embedding_cls(matched_data, origins):
     
     bert_config = BertConfig.from_pretrained('bert-large-cased')         
     bert_tokenizer = BertTokenizer.from_pretrained('bert-large-cased')
-    bert_embeddings = DiffusionNERBertEmbeddings(bert_config)
+    bert_embeddings = DiffusionNERBertEmbeddings(bert_config)                           # auch die von flair? -> andere Ergebnisse? 
+                                                                                        # benutze ich die richtig? mit entity level etc.
 
     for orig_id in origins:
-        origins[orig_id]["embeddings"] = torch.empty(origins[orig_id]["n_entities"], 1024)      # findet speicherung/zugriff in folge richtig statt?
+        origins[orig_id]["embeddings"] = torch.zeros(origins[orig_id]["n_entities"], 1, 1024)
 
         i = 0
         for doc_id in origins[orig_id]["docs"]:
@@ -91,7 +92,7 @@ def similarity_embedding_cls(matched_data, origins):
                     entity_token_ids = torch.tensor(bert_tokenizer.encode(matched_data[doc_id][entity_id]["text"], add_special_tokens=True)).unsqueeze(0)
                     with torch.no_grad():
                         entity_embedding = bert_embeddings(input_ids=entity_token_ids)
-                    entity_cls_embedding = entity_embedding[:, 0, :].unsqueeze(0)                   # nochmal überprüfen
+                    entity_cls_embedding = entity_embedding[:, 0, :]
 
                     matched_data[doc_id][entity_id]["embedding"] = entity_cls_embedding
                     matched_data[doc_id][entity_id]["index"] = i
@@ -101,59 +102,10 @@ def similarity_embedding_cls(matched_data, origins):
 
 def similarity_embedding_sum(matched_data, origins):       
 
-    # bert_config = BertConfig.from_pretrained('bert-large-cased')         
-    # bert_tokenizer = BertTokenizer.from_pretrained('bert-large-cased')
-    # bert_embeddings = DiffusionNERBertEmbeddings(bert_config)
-
-    # for orig_id in origins:
-    #     origins[orig_id]["embeddings"] = torch.empty(origins[orig_id]["n_entities"], 1024)      # findet speicherung/zugriff in folge richtig statt?
-
-    #     i = 0                                                
-    #     for doc_id in origins[orig_id]["docs"]:
-    #         doc_tokens = origins[orig_id]["docs"][doc_id]
-    #         doc_text = " ".join(doc_tokens)
-
-    #         doc_encoding = bert_tokenizer(doc_text, add_special_tokens=False, return_tensors="pt")
-    #         doc_token_ids = doc_encoding["input_ids"]
-
-    #         with torch.no_grad():
-    #             doc_embedding = bert_embeddings(input_ids=doc_token_ids)
-            
-            # doc_token_offsets_mapping = []
-
-            # doc_tok = 0
-            # start = 0
-            # bert_tok = 0
-            # for token in doc_tokens:
-            #     doc_token_offsets_mapping[doc_tok] = []
-                
-            #     end = start + len(token)
-
-            #     (s, _) = doc_offsets_mapping[bert_tok]
-            #     while(s<end):
-            #         doc_token_offsets_mapping[doc_tok].append(bert_tok)
-            #         bert_tok+=1
-            #         (s, _) = doc_offsets_mapping[bert_tok]
-                
-            #     start = end+1
-            #     doc_tok+=1
-            
-            # for entity_id in matched_data[doc_id]:
-            #     if entity_id != "orig_id":
-            #         entity_sum_embedding = 0
-            #         for k in range(matched_data[doc_id][entity_id]["start"], matched_data[doc_id][entity_id]["end"]):
-            #             for l in doc_token_offsets_mapping[k]:
-            #                 entity_sum_embedding += doc_tok[l]
-
-            #         matched_data[doc_id][entity_id]["embedding"] = entity_sum_embedding
-            #         matched_data[doc_id][entity_id]["index"] = i
-            #         origins[orig_id]["embeddings"][i] = entity_sum_embedding
-            #         i+=1
-
-    bert_embeddings = TransformerWordEmbeddings('bert-large-cased', subtoken_pooling='mean')
+    bert_embeddings = TransformerWordEmbeddings('bert-large-cased', subtoken_pooling='mean')      # brauche embedding mit kontext
 
     for orig_id in origins:
-        origins[orig_id]["embeddings"] = torch.empty(origins[orig_id]["n_entities"], 1024)      # findet speicherung/zugriff in folge richtig statt?
+        origins[orig_id]["embeddings"] = torch.zeros(origins[orig_id]["n_entities"], 1, 1024)       
 
         i = 0                                                
         for doc_id in origins[orig_id]["docs"]:
@@ -165,9 +117,9 @@ def similarity_embedding_sum(matched_data, origins):
 
             for entity_id in matched_data[doc_id]:
                 if entity_id != "orig_id":
-                    entity_sum_embedding = 0
+                    entity_sum_embedding = torch.zeros(1, 1024)
                     for k in range(matched_data[doc_id][entity_id]["start"], matched_data[doc_id][entity_id]["end"]):
-                        entity_sum_embedding += doc[k].embedding
+                        entity_sum_embedding[0] += doc[k].embedding   
 
                     matched_data[doc_id][entity_id]["embedding"] = entity_sum_embedding
                     matched_data[doc_id][entity_id]["index"] = i
@@ -224,14 +176,14 @@ def label_retrieval(data_file_in, data_file_out):
 
     data = read_json(data_file_in)
     matched_data, origins = match_entities(data, lmbda=0.35)            # Menge von der gesampled wird sehr klein -> Parameter -> oder globaleres Sampling
-    similarity_embedding_cls(matched_data, origins)
+    similarity_embedding_sum(matched_data, origins)
     knn(matched_data, origins, k=3)
     write_json(matched_data, data, data_file_out)
 
 
 def main():
-    data_file_in = "./noisebench/conll03_clean_train.json"
-    data_file_out = "./results/conll03_clean_train_lr_cls_nes.json"
+    data_file_in = "./test.json"
+    data_file_out = "./results/test_lr_sum.json"
     label_retrieval(data_file_in, data_file_out)
 
 
