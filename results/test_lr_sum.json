@@ -1,0 +1,1232 @@
+[
+    {
+        "tokens": [
+            "German",
+            "farm",
+            "ministry",
+            "tells",
+            "consumers",
+            "to",
+            "avoid",
+            "British",
+            "mutton",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 0,
+                "end": 1,
+                "type": "MISC"
+            },
+            {
+                "start": 7,
+                "end": 8,
+                "type": "MISC"
+            }
+        ],
+        "relations": [],
+        "orig_id": "335"
+    },
+    {
+        "tokens": [
+            "BONN",
+            "1996-08-22"
+        ],
+        "entities": [
+            {
+                "start": 0,
+                "end": 1,
+                "type": "LOC"
+            }
+        ],
+        "relations": [],
+        "orig_id": "335"
+    },
+    {
+        "tokens": [
+            "Germany",
+            "'s",
+            "Agriculture",
+            "Ministry",
+            "suggested",
+            "on",
+            "Wednesday",
+            "that",
+            "consumers",
+            "avoid",
+            "eating",
+            "meat",
+            "from",
+            "British",
+            "sheep",
+            "until",
+            "scientists",
+            "determine",
+            "whether",
+            "mad",
+            "cow",
+            "disease",
+            "can",
+            "be",
+            "transmitted",
+            "to",
+            "the",
+            "animals",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 0,
+                "end": 1,
+                "type": "LOC"
+            },
+            {
+                "start": 2,
+                "end": 4,
+                "type": "ORG"
+            },
+            {
+                "start": 13,
+                "end": 14,
+                "type": "MISC"
+            }
+        ],
+        "relations": [],
+        "orig_id": "335"
+    },
+    {
+        "tokens": [
+            "\"",
+            "Until",
+            "this",
+            "is",
+            "cleared",
+            "up",
+            "by",
+            "the",
+            "European",
+            "Union",
+            "'s",
+            "scientific",
+            "panels",
+            "--",
+            "and",
+            "we",
+            "have",
+            "asked",
+            "this",
+            "to",
+            "be",
+            "done",
+            "as",
+            "quickly",
+            "as",
+            "possible",
+            "--",
+            "(",
+            "consumers",
+            ")",
+            "should",
+            "if",
+            "at",
+            "all",
+            "possible",
+            "give",
+            "preference",
+            "to",
+            "sheepmeat",
+            "from",
+            "other",
+            "countries",
+            ",",
+            "\"",
+            "ministry",
+            "official",
+            "Werner",
+            "Zwingmann",
+            "told",
+            "ZDF",
+            "television",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 8,
+                "end": 10,
+                "type": "ORG"
+            },
+            {
+                "start": 46,
+                "end": 48,
+                "type": "PER"
+            },
+            {
+                "start": 49,
+                "end": 50,
+                "type": "ORG"
+            }
+        ],
+        "relations": [],
+        "orig_id": "335"
+    },
+    {
+        "tokens": [
+            "\"",
+            "I",
+            "do",
+            "not",
+            "want",
+            "to",
+            "say",
+            "that",
+            "there",
+            "is",
+            "a",
+            "concrete",
+            "danger",
+            "for",
+            "consumers",
+            ",",
+            "\"",
+            "he",
+            "added",
+            ".",
+            "\""
+        ],
+        "entities": [],
+        "relations": [],
+        "orig_id": "335"
+    },
+    {
+        "tokens": [
+            "There",
+            "are",
+            "too",
+            "many",
+            "holes",
+            "in",
+            "what",
+            "we",
+            "know",
+            ",",
+            "and",
+            "these",
+            "must",
+            "be",
+            "filled",
+            "very",
+            "quickly",
+            ".",
+            "\""
+        ],
+        "entities": [],
+        "relations": [],
+        "orig_id": "335"
+    },
+    {
+        "tokens": [
+            "Bonn",
+            "has",
+            "led",
+            "efforts",
+            "to",
+            "ensure",
+            "consumer",
+            "protection",
+            "tops",
+            "the",
+            "list",
+            "of",
+            "priorities",
+            "in",
+            "dealing",
+            "with",
+            "the",
+            "mad",
+            "cow",
+            "crisis",
+            ",",
+            "which",
+            "erupted",
+            "in",
+            "March",
+            "when",
+            "Britain",
+            "acknowledged",
+            "humans",
+            "could",
+            "contract",
+            "a",
+            "similar",
+            "illness",
+            "by",
+            "eating",
+            "contaminated",
+            "beef",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 0,
+                "end": 1,
+                "type": "LOC"
+            },
+            {
+                "start": 26,
+                "end": 27,
+                "type": "LOC"
+            }
+        ],
+        "relations": [],
+        "orig_id": "335"
+    },
+    {
+        "tokens": [
+            "The",
+            "European",
+            "Commission",
+            "agreed",
+            "this",
+            "month",
+            "to",
+            "rethink",
+            "a",
+            "proposal",
+            "to",
+            "ban",
+            "the",
+            "use",
+            "of",
+            "suspect",
+            "sheep",
+            "tissue",
+            "after",
+            "some",
+            "EU",
+            "veterinary",
+            "experts",
+            "questioned",
+            "whether",
+            "it",
+            "was",
+            "justified",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 1,
+                "end": 3,
+                "type": "ORG"
+            },
+            {
+                "start": 20,
+                "end": 21,
+                "type": "ORG"
+            }
+        ],
+        "relations": [],
+        "orig_id": "335"
+    },
+    {
+        "tokens": [
+            "EU",
+            "Farm",
+            "Commissioner",
+            "Franz",
+            "Fischler",
+            "had",
+            "proposed",
+            "banning",
+            "sheep",
+            "brains",
+            ",",
+            "spleens",
+            "and",
+            "spinal",
+            "cords",
+            "from",
+            "the",
+            "human",
+            "and",
+            "animal",
+            "food",
+            "chains",
+            "after",
+            "reports",
+            "from",
+            "Britain",
+            "and",
+            "France",
+            "that",
+            "under",
+            "laboratory",
+            "conditions",
+            "sheep",
+            "could",
+            "contract",
+            "Bovine",
+            "Spongiform",
+            "Encephalopathy",
+            "(",
+            "BSE",
+            ")",
+            "--",
+            "mad",
+            "cow",
+            "disease",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 0,
+                "end": 1,
+                "type": "ORG"
+            },
+            {
+                "start": 3,
+                "end": 5,
+                "type": "PER"
+            },
+            {
+                "start": 25,
+                "end": 26,
+                "type": "LOC"
+            },
+            {
+                "start": 27,
+                "end": 28,
+                "type": "LOC"
+            },
+            {
+                "start": 35,
+                "end": 38,
+                "type": "MISC"
+            },
+            {
+                "start": 39,
+                "end": 40,
+                "type": "MISC"
+            }
+        ],
+        "relations": [],
+        "orig_id": "335"
+    },
+    {
+        "tokens": [
+            "But",
+            "some",
+            "members",
+            "of",
+            "the",
+            "EU",
+            "'s",
+            "standing",
+            "veterinary",
+            "committee",
+            "questioned",
+            "whether",
+            "the",
+            "action",
+            "was",
+            "necessary",
+            "given",
+            "the",
+            "slight",
+            "risk",
+            "to",
+            "human",
+            "health",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 5,
+                "end": 6,
+                "type": "ORG"
+            }
+        ],
+        "relations": [],
+        "orig_id": "335"
+    },
+    {
+        "tokens": [
+            "The",
+            "question",
+            "is",
+            "being",
+            "studied",
+            "separately",
+            "by",
+            "two",
+            "EU",
+            "scientific",
+            "committees",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 8,
+                "end": 9,
+                "type": "ORG"
+            }
+        ],
+        "relations": [],
+        "orig_id": "335"
+    },
+    {
+        "tokens": [
+            "Sheep",
+            "have",
+            "long",
+            "been",
+            "known",
+            "to",
+            "contract",
+            "scrapie",
+            ",",
+            "a",
+            "similar",
+            "brain-wasting",
+            "disease",
+            "to",
+            "BSE",
+            "which",
+            "is",
+            "believed",
+            "to",
+            "have",
+            "been",
+            "transferred",
+            "to",
+            "cattle",
+            "through",
+            "feed",
+            "containing",
+            "animal",
+            "waste",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 14,
+                "end": 15,
+                "type": "MISC"
+            }
+        ],
+        "relations": [],
+        "orig_id": "335"
+    },
+    {
+        "tokens": [
+            "British",
+            "officials",
+            "say",
+            "sheep",
+            "meat",
+            "is",
+            "perfectly",
+            "safe",
+            "to",
+            "eat",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 0,
+                "end": 1,
+                "type": "MISC"
+            }
+        ],
+        "relations": [],
+        "orig_id": "335"
+    },
+    {
+        "tokens": [
+            "ZDF",
+            "said",
+            "Germany",
+            "imported",
+            "47,600",
+            "sheep",
+            "from",
+            "Britain",
+            "last",
+            "year",
+            ",",
+            "nearly",
+            "half",
+            "of",
+            "total",
+            "imports",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 0,
+                "end": 1,
+                "type": "ORG"
+            },
+            {
+                "start": 2,
+                "end": 3,
+                "type": "LOC"
+            },
+            {
+                "start": 7,
+                "end": 8,
+                "type": "LOC"
+            }
+        ],
+        "relations": [],
+        "orig_id": "335"
+    },
+    {
+        "tokens": [
+            "It",
+            "brought",
+            "in",
+            "4,275",
+            "tonnes",
+            "of",
+            "British",
+            "mutton",
+            ",",
+            "some",
+            "10",
+            "percent",
+            "of",
+            "overall",
+            "imports",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 6,
+                "end": 7,
+                "type": "MISC"
+            }
+        ],
+        "relations": [],
+        "orig_id": "335"
+    },
+    {
+        "tokens": [
+            "After",
+            "the",
+            "British",
+            "government",
+            "admitted",
+            "a",
+            "possible",
+            "link",
+            "between",
+            "mad",
+            "cow",
+            "disease",
+            "and",
+            "its",
+            "fatal",
+            "human",
+            "equivalent",
+            ",",
+            "the",
+            "EU",
+            "imposed",
+            "a",
+            "worldwide",
+            "ban",
+            "on",
+            "British",
+            "beef",
+            "exports",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 2,
+                "end": 3,
+                "type": "MISC"
+            },
+            {
+                "start": 19,
+                "end": 20,
+                "type": "ORG"
+            },
+            {
+                "start": 25,
+                "end": 26,
+                "type": "MISC"
+            }
+        ],
+        "relations": [],
+        "orig_id": "335"
+    },
+    {
+        "tokens": [
+            "EU",
+            "leaders",
+            "agreed",
+            "at",
+            "a",
+            "summit",
+            "in",
+            "June",
+            "to",
+            "a",
+            "progressive",
+            "lifting",
+            "of",
+            "the",
+            "ban",
+            "as",
+            "Britain",
+            "takes",
+            "parallel",
+            "measures",
+            "to",
+            "eradicate",
+            "the",
+            "disease",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 0,
+                "end": 1,
+                "type": "ORG"
+            },
+            {
+                "start": 16,
+                "end": 17,
+                "type": "LOC"
+            }
+        ],
+        "relations": [],
+        "orig_id": "335"
+    },
+    {
+        "tokens": [
+            "SOCCER",
+            "-",
+            "CHAMPIONS",
+            "PORTO",
+            "KICK",
+            "OFF",
+            "SEASON",
+            "WITH",
+            "A",
+            "DRAW",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 3,
+                "end": 4,
+                "type": "ORG"
+            }
+        ],
+        "relations": [],
+        "orig_id": "336"
+    },
+    {
+        "tokens": [
+            "LISBON",
+            "1996-08-25"
+        ],
+        "entities": [
+            {
+                "start": 0,
+                "end": 1,
+                "type": "LOC"
+            }
+        ],
+        "relations": [],
+        "orig_id": "336"
+    },
+    {
+        "tokens": [
+            "Portuguese",
+            "champions",
+            "Porto",
+            "kicked",
+            "off",
+            "the",
+            "season",
+            "with",
+            "a",
+            "disappointing",
+            "2-2",
+            "home",
+            "draw",
+            "against",
+            "Setubal",
+            "and",
+            "were",
+            "lucky",
+            "to",
+            "squeeze",
+            "in",
+            "an",
+            "equaliser",
+            "in",
+            "extra",
+            "time",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 0,
+                "end": 1,
+                "type": "MISC"
+            },
+            {
+                "start": 2,
+                "end": 3,
+                "type": "ORG"
+            },
+            {
+                "start": 14,
+                "end": 15,
+                "type": "ORG"
+            }
+        ],
+        "relations": [],
+        "orig_id": "336"
+    },
+    {
+        "tokens": [
+            "Porto",
+            ",",
+            "who",
+            "are",
+            "fighting",
+            "to",
+            "take",
+            "their",
+            "third",
+            "consecutive",
+            "title",
+            "this",
+            "season",
+            ",",
+            "were",
+            "2-0",
+            "down",
+            "until",
+            "the",
+            "86th",
+            "minute",
+            "when",
+            "a",
+            "header",
+            "by",
+            "Mario",
+            "Jardel",
+            "found",
+            "the",
+            "net",
+            "after",
+            "a",
+            "string",
+            "of",
+            "missed",
+            "opportunities",
+            ",",
+            "including",
+            "a",
+            "penalty",
+            "taken",
+            "by",
+            "top",
+            "league",
+            "scorer",
+            "Domingos",
+            "Oliveira",
+            "in",
+            "the",
+            "60th",
+            "minute",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 0,
+                "end": 1,
+                "type": "ORG"
+            },
+            {
+                "start": 25,
+                "end": 27,
+                "type": "PER"
+            },
+            {
+                "start": 45,
+                "end": 47,
+                "type": "PER"
+            }
+        ],
+        "relations": [],
+        "orig_id": "336"
+    },
+    {
+        "tokens": [
+            "Domingos",
+            "redeemed",
+            "himself",
+            "by",
+            "netting",
+            "the",
+            "equaliser",
+            "just",
+            "into",
+            "extra",
+            "time",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 0,
+                "end": 1,
+                "type": "PER"
+            }
+        ],
+        "relations": [],
+        "orig_id": "336"
+    },
+    {
+        "tokens": [
+            "Setubal",
+            ",",
+            "who",
+            "put",
+            "on",
+            "a",
+            "skilful",
+            "counter-attack",
+            "throughout",
+            "the",
+            "game",
+            ",",
+            "opened",
+            "the",
+            "scoring",
+            "16",
+            "minutes",
+            "into",
+            "the",
+            "match",
+            "when",
+            "an",
+            "unmarked",
+            "Chiquinho",
+            "Conde",
+            "shot",
+            "around",
+            "Porto",
+            "'s",
+            "new",
+            "Polish",
+            "keeper",
+            "Andrejez",
+            "Wozniak",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 0,
+                "end": 1,
+                "type": "ORG"
+            },
+            {
+                "start": 23,
+                "end": 25,
+                "type": "PER"
+            },
+            {
+                "start": 27,
+                "end": 28,
+                "type": "ORG"
+            },
+            {
+                "start": 30,
+                "end": 31,
+                "type": "MISC"
+            },
+            {
+                "start": 32,
+                "end": 34,
+                "type": "PER"
+            }
+        ],
+        "relations": [],
+        "orig_id": "336"
+    },
+    {
+        "tokens": [
+            "Conde",
+            "scored",
+            "his",
+            "second",
+            "in",
+            "the",
+            "70th",
+            "minute",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 0,
+                "end": 1,
+                "type": "PER"
+            }
+        ],
+        "relations": [],
+        "orig_id": "336"
+    },
+    {
+        "tokens": [
+            "Benfica",
+            ",",
+            "also",
+            "playing",
+            "their",
+            "first",
+            "game",
+            "of",
+            "the",
+            "season",
+            "at",
+            "home",
+            ",",
+            "were",
+            "held",
+            "to",
+            "a",
+            "1-1",
+            "draw",
+            "by",
+            "northern",
+            "side",
+            "Braga",
+            "despite",
+            "the",
+            "fact",
+            "that",
+            "the",
+            "visitors",
+            "were",
+            "reduced",
+            "to",
+            "10",
+            "men",
+            "in",
+            "the",
+            "54th",
+            "minute",
+            "after",
+            "Rodrigo",
+            "Carneiro",
+            "was",
+            "sent",
+            "off",
+            "for",
+            "a",
+            "second",
+            "bookable",
+            "offence",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 0,
+                "end": 1,
+                "type": "ORG"
+            },
+            {
+                "start": 22,
+                "end": 23,
+                "type": "ORG"
+            },
+            {
+                "start": 39,
+                "end": 41,
+                "type": "PER"
+            }
+        ],
+        "relations": [],
+        "orig_id": "336"
+    },
+    {
+        "tokens": [
+            "Benfica",
+            "dominated",
+            "the",
+            "game",
+            "but",
+            "their",
+            "lack",
+            "of",
+            "a",
+            "first-class",
+            "striker",
+            "was",
+            "apparent",
+            "throughout",
+            "and",
+            "in",
+            "the",
+            "30th",
+            "minute",
+            "they",
+            "lost",
+            "key",
+            "Brazilian",
+            "midfielder",
+            "Valdo",
+            "who",
+            "suffered",
+            "a",
+            "light",
+            "knee",
+            "injury",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 0,
+                "end": 1,
+                "type": "ORG"
+            },
+            {
+                "start": 22,
+                "end": 23,
+                "type": "MISC"
+            },
+            {
+                "start": 24,
+                "end": 25,
+                "type": "PER"
+            }
+        ],
+        "relations": [],
+        "orig_id": "336"
+    },
+    {
+        "tokens": [
+            "He",
+            "was",
+            "substituted",
+            "by",
+            "Paulao",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 4,
+                "end": 5,
+                "type": "PER"
+            }
+        ],
+        "relations": [],
+        "orig_id": "336"
+    },
+    {
+        "tokens": [
+            "Benfica",
+            "finally",
+            "opened",
+            "the",
+            "scoring",
+            "in",
+            "the",
+            "81st",
+            "minute",
+            "with",
+            "a",
+            "penalty",
+            "taken",
+            "by",
+            "Helder",
+            "after",
+            "Luis",
+            "Baltasar",
+            "tripped",
+            "up",
+            "captain",
+            "Joao",
+            "Pinto",
+            "under",
+            "the",
+            "referee",
+            "'s",
+            "nose",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 0,
+                "end": 1,
+                "type": "ORG"
+            },
+            {
+                "start": 14,
+                "end": 15,
+                "type": "PER"
+            },
+            {
+                "start": 16,
+                "end": 18,
+                "type": "PER"
+            },
+            {
+                "start": 21,
+                "end": 23,
+                "type": "PER"
+            }
+        ],
+        "relations": [],
+        "orig_id": "336"
+    },
+    {
+        "tokens": [
+            "Braga",
+            "defender",
+            "Idalecio",
+            "gave",
+            "his",
+            "team",
+            "their",
+            "equaliser",
+            "seven",
+            "minutes",
+            "from",
+            "the",
+            "final",
+            "whistle",
+            "with",
+            "a",
+            "header",
+            "into",
+            "the",
+            "back",
+            "of",
+            "the",
+            "net",
+            "."
+        ],
+        "entities": [
+            {
+                "start": 0,
+                "end": 1,
+                "type": "ORG"
+            },
+            {
+                "start": 2,
+                "end": 3,
+                "type": "PER"
+            }
+        ],
+        "relations": [],
+        "orig_id": "336"
+    }
+]
