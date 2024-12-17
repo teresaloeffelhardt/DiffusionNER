@@ -8,9 +8,7 @@ from flair.embeddings import TransformerWordEmbeddings
 from flair.data import Sentence
 from collections import Counter
 
-import pprint
-
-
+# read json content and structure into data
 def read_json(data_file):
     
     with open(data_file, 'r') as data_file:
@@ -44,27 +42,56 @@ def match_entities(data, lmbda):
         for i in range(len(doc["tokens"])):
             for j in range(1, 4):
                 if i+j < len(doc["tokens"]) and (i, i+j) not in pos_entities:
-                    neg_entities.append((i, i+j))
+                    if not any(not((k<i and l<=i+j) or (k>=i+j and l>i+j)) for (k,l) in pos_entities):
+                        neg_entities.append((i, i+j))
 
-        negative_sampling_doc(doc, matched_data, doc_id, neg_entities, lmbda, last_entity_id=entity_id)
+        matched_data_nes = negative_sampling_doc(doc, matched_data, doc_id, neg_entities, lmbda, last_entity_id=entity_id)  # sollte über origin sein
 
         if doc["orig_id"] in origins:
             origins[doc["orig_id"]]["docs"][f"doc_{doc_id}"] = doc["tokens"]
-            origins[doc["orig_id"]]["n_entities"] += len(matched_data[f"doc_{doc_id}"])-1
+            origins[doc["orig_id"]]["n_entities"] += len(matched_data_nes[f"doc_{doc_id}"])-1
         else:
             origins[doc["orig_id"]] = {"docs": {f"doc_{doc_id}": doc["tokens"]},
-                                       "n_entities": len(matched_data[f"doc_{doc_id}"])-1}
+                                       "n_entities": len(matched_data_nes[f"doc_{doc_id}"])-1}
 
-    return matched_data, origins
+    return matched_data_nes, origins
             
 
 def negative_sampling_doc(doc, matched_data, doc_id, neg_entities, lmbda, last_entity_id):
 
-    sample_size = math.ceil(lmbda * len(doc["tokens"]))
+    # sample_size = math.ceil(lmbda * len(doc["tokens"]))                     # durch runden sind es jedes Mal zu viele im doc
+    
+    n_entities = len(matched_data[f"doc_{doc_id}"])-1                          # kann in ungelabelten Sätzen auch nicht mehr labeln
+    sample_size_float = lmbda * n_entities
+    sample_size_int = int(sample_size_float)
+    sample_size_frac = sample_size_float-sample_size_int
+    if random.random() < sample_size_frac:                                    # nicht mehr deterministisch! - nicht gut?
+        sample_size = sample_size_int+1
+    else:
+        sample_size = sample_size_int
+
     neg_entities_size = len(neg_entities)
     if sample_size > neg_entities_size:
         sample_size = neg_entities_size                                  #  besseren Weg bzw. lmbda*neg_entities_size immer nehmen?
     neg_sample = random.sample(neg_entities, sample_size)
+
+    left_neg_entities = list(set(neg_entities)-set(neg_sample))          # in diesem Abschnitt direkt mit sets arbeiten und erst am Ende wieder Conversion?
+    removed = -1
+    while left_neg_entities and removed!=0:
+        removed = 0
+        for (i,j) in neg_sample:
+            if any(not(k==i and l==j) and not((k<i and l<=i) or (k>=j and l>j)) for (k,l) in neg_sample):
+                neg_sample.remove((i,j))
+                removed+=1
+        if removed > len(left_neg_entities):
+            removed = len(left_neg_entities)
+        add_neg_sample = random.sample(left_neg_entities, removed)
+        left_neg_entities = list(set(left_neg_entities)-set(add_neg_sample))
+        neg_sample += add_neg_sample
+    
+    for (i,j) in neg_sample:
+        if any(not(k==i and l==j) and not((k<i and l<=i) or (k>=j and l>j)) for (k,l) in neg_sample):
+            neg_sample.remove((i,j))
 
     entity_id = last_entity_id
     for (i,j) in neg_sample:
@@ -72,7 +99,38 @@ def negative_sampling_doc(doc, matched_data, doc_id, neg_entities, lmbda, last_e
         matched_data[f"doc_{doc_id}"][f"entity_{entity_id}"] = {"text": " ".join(doc["tokens"][i:j]), 
                                                                 "label": "O",
                                                                 "start": i,
-                                                                "end": j}                          
+                                                                "end": j}    
+
+    return matched_data
+
+
+def sort_entities(matched_data, origins):
+
+    for doc_id in matched_data:
+        doc = {"orig_id": matched_data[doc_id]["orig_id"]}
+
+        n_entities_doc = len(matched_data[doc_id])-1
+        tokens = len(origins[matched_data[doc_id]["orig_id"]]["docs"][doc_id])
+        last_end = 0
+        min_start = tokens
+        min_entity_id = "entity_0"
+        for i in range(n_entities_doc):
+            for entity_id in matched_data[doc_id]:
+                if entity_id != "orig_id":
+                    start = matched_data[doc_id][entity_id]["start"]
+
+                    if start>=last_end and start<min_start:
+                        min_start = start
+                        min_entity_id = entity_id
+
+            doc[f"entity_{i+1}"] = matched_data[doc_id][min_entity_id]
+            last_end = matched_data[doc_id][min_entity_id]["end"]
+            min_start = tokens
+            min_entity_id = "entity_0"
+        
+        matched_data[doc_id] = doc
+
+    return matched_data
 
 
 def similarity_embedding_cls(matched_data, origins):
@@ -98,6 +156,8 @@ def similarity_embedding_cls(matched_data, origins):
                     matched_data[doc_id][entity_id]["index"] = i
                     origins[orig_id]["embeddings"][i] = entity_cls_embedding
                     i+=1
+    
+    return matched_data, origins
 
 
 def similarity_embedding_sum(matched_data, origins):       
@@ -126,6 +186,8 @@ def similarity_embedding_sum(matched_data, origins):
                     origins[orig_id]["embeddings"][i] = entity_sum_embedding
                     i+=1
 
+    return matched_data, origins
+
 
 def knn(matched_data, origins, k):
 
@@ -133,12 +195,17 @@ def knn(matched_data, origins, k):
         for doc_id in origins[orig_id]["docs"]:
             for entity_id in matched_data[doc_id]:
                 if entity_id != "orig_id":
-                    entity_dist_vector = torch.nn.functional.cosine_similarity(matched_data[doc_id][entity_id]["embedding"], origins[orig_id]["embeddings"])
+                    # entity_dist_vector = torch.nn.functional.cosine_similarity(matched_data[doc_id][entity_id]["embedding"], origins[orig_id]["embeddings"])
+                        # unsqueeze(0) erstes Argument und dim=1 ?
+                    entity_dist_vector = torch.zeros(len(origins[orig_id]["embeddings"]))
+                    for i in range(len(origins[orig_id]["embeddings"])):
+                        entity_dist_vector[i] = torch.nn.functional.cosine_similarity(matched_data[doc_id][entity_id]["embedding"], origins[orig_id]["embeddings"][i])
+
                     if entity_dist_vector.shape[0] >= k:
                         _, entity_knn_indices = entity_dist_vector.topk(k, largest=True)
 
+                        entity_knn_indices_list = entity_knn_indices.tolist()
                         entity_knn_labels = []
-                        entity_knn_indices_list = entity_knn_indices.tolist()   # [0] - etwas ist komisch
                         for doc_id_other in origins[orig_id]["docs"]:
                             for entity_id_other in matched_data[doc_id_other]:
                                 if entity_id_other != "orig_id":
@@ -152,6 +219,8 @@ def knn(matched_data, origins, k):
 
                             matched_data[doc_id][entity_id]["label"] = majority_label         # konditionieren? - weniger write/runtime?
 
+    return matched_data
+
 
 def write_json(matched_data, data, data_file_out):
 
@@ -159,31 +228,34 @@ def write_json(matched_data, data, data_file_out):
     for doc in data:
         doc_id+=1
 
-        doc["entities"] = []
+        doc_entities = []
         for entity_id in matched_data[f"doc_{doc_id}"]:
             if entity_id != "embeddings" and entity_id != "orig_id":
                 if matched_data[f"doc_{doc_id}"][entity_id]["label"] != "O":
-                    doc["entities"].append({"start": matched_data[f"doc_{doc_id}"][entity_id]["start"],
+                    doc_entities.append({"start": matched_data[f"doc_{doc_id}"][entity_id]["start"],
                                             "end": matched_data[f"doc_{doc_id}"][entity_id]["end"],
                                             "type": matched_data[f"doc_{doc_id}"][entity_id]["label"]})
+                    
+        doc["entities"] = doc_entities
         
     with open(data_file_out, 'w') as data_file_out:
-        json.dump(data, data_file_out, indent=4)
+        json.dump(data, data_file_out, indent=4)    
 
 
 
 def label_retrieval(data_file_in, data_file_out):
 
     data = read_json(data_file_in)
-    matched_data, origins = match_entities(data, lmbda=0.35)            # Menge von der gesampled wird sehr klein -> Parameter -> oder globaleres Sampling
-    similarity_embedding_sum(matched_data, origins)
-    knn(matched_data, origins, k=3)
-    write_json(matched_data, data, data_file_out)
+    matched_data, origins = match_entities(data, lmbda=0.33)            # Menge von der gesampled wird sehr klein -> Parameter -> oder globaleres Sampling
+    matched_data_sorted = sort_entities(matched_data, origins)
+    matched_data_embd, origins_embd = similarity_embedding_cls(matched_data_sorted, origins)
+    matched_data_knn = knn(matched_data_embd, origins_embd, k=10)
+    write_json(matched_data_knn, data, data_file_out)
 
 
 def main():
     data_file_in = "./test.json"
-    data_file_out = "./results/test_lr_sum.json"
+    data_file_out = "./results/test_lr_cls_k10.json"
     label_retrieval(data_file_in, data_file_out)
 
 
