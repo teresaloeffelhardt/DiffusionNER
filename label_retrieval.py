@@ -4,7 +4,7 @@ import random
 from transformers import BertConfig, BertTokenizer
 from diffusionner.modeling_bert import BertEmbeddings as DiffusionNERBertEmbeddings
 import torch
-from flair.embeddings import TransformerWordEmbeddings
+from flair.embeddings import TransformerDocumentEmbeddings, TransformerWordEmbeddings
 from flair.data import Sentence
 from collections import Counter
 
@@ -133,12 +133,11 @@ def sort_entities(matched_data, origins):
     return matched_data
 
 
-def similarity_embedding_cls(matched_data, origins):
+def similarity_embedding_cls_difner(matched_data, origins):
     
     bert_config = BertConfig.from_pretrained('bert-large-cased')         
     bert_tokenizer = BertTokenizer.from_pretrained('bert-large-cased')
-    bert_embeddings = DiffusionNERBertEmbeddings(bert_config)                           # auch die von flair? -> andere Ergebnisse? 
-                                                                                        # benutze ich die richtig? mit entity level etc.
+    bert_embeddings = DiffusionNERBertEmbeddings(bert_config)                           
 
     for orig_id in origins:
         origins[orig_id]["embeddings"] = torch.zeros(origins[orig_id]["n_entities"], 1, 1024)
@@ -160,9 +159,34 @@ def similarity_embedding_cls(matched_data, origins):
     return matched_data, origins
 
 
+def similarity_embedding_cls(matched_data, origins):
+    
+    bert_embeddings = TransformerDocumentEmbeddings('bert-large-cased', subtoken_pooling='mean')
+
+    for orig_id in origins:
+        origins[orig_id]["embeddings"] = torch.zeros(origins[orig_id]["n_entities"], 1, 1024)
+
+        i = 0
+        for doc_id in origins[orig_id]["docs"]:
+            for entity_id in matched_data[doc_id]:
+                if entity_id != "orig_id":
+                    entity_text = matched_data[doc_id][entity_id]["text"]
+                    entity = Sentence(entity_text)
+
+                    bert_embeddings.embed(entity)
+                    entity_embedding = entity.embedding
+
+                    matched_data[doc_id][entity_id]["embedding"] = entity_embedding
+                    matched_data[doc_id][entity_id]["index"] = i
+                    origins[orig_id]["embeddings"][i] = entity_embedding
+                    i+=1
+    
+    return matched_data, origins
+
+
 def similarity_embedding_sum(matched_data, origins):       
 
-    bert_embeddings = TransformerWordEmbeddings('bert-large-cased', subtoken_pooling='mean')      # brauche embedding mit kontext
+    bert_embeddings = TransformerWordEmbeddings('bert-large-cased', subtoken_pooling='mean')
 
     for orig_id in origins:
         origins[orig_id]["embeddings"] = torch.zeros(origins[orig_id]["n_entities"], 1, 1024)       
