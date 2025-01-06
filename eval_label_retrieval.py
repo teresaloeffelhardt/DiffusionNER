@@ -1,6 +1,6 @@
+import label_retrieval as lr
 import json
-from seqeval.metrics import f1_score
-from seqeval.metrics import classification_report
+from seqeval.metrics import f1_score, classification_report, accuracy_score
 
 
 def read_json(data_file):
@@ -31,7 +31,7 @@ def match_entities(data):
     return matched_data, doc_id
 
 
-def get_label_seq(matched_entities, no_docs):
+def extract_label_seq(matched_entities, no_docs):
     
     labels = []
 
@@ -63,44 +63,106 @@ def get_label_seq(matched_entities, no_docs):
     return labels
 
 
-# clean_data_file = "./noisebench/conll03_clean_train.json"
-# original_data_file = "./noisebench/conll03_noisy_original_train.json"
-# retrieved_data_file = "./results/conll03_noisy_original_train_lr_sum_k10.json"
-
-clean_data_file = "./test.json"
-original_data_file = "./test.json"
-retrieved_data_file = "./results/test_lr_cls_k10.json"
-
-
-clean_data = read_json(clean_data_file)
-original_data = read_json(original_data_file)
-retrieved_data = read_json(retrieved_data_file)
-
-clean_matched_entities, no_clean_docs = match_entities(clean_data)
-original_matched_entities, no_original_docs = match_entities(original_data)
-retrieved_matched_entities, no_retrieved_docs = match_entities(retrieved_data)
-
-assert no_clean_docs == no_original_docs == no_retrieved_docs
-no_docs = no_clean_docs
-
-clean_labels = get_label_seq(clean_matched_entities, no_docs)
-original_labels = get_label_seq(original_matched_entities, no_docs)
-retrieved_labels = get_label_seq(retrieved_matched_entities, no_docs)
-
-print(f1_score(clean_labels, retrieved_labels))
-print(classification_report(clean_labels, retrieved_labels))
-
-
-for i in range(no_docs):
-    assert len(original_labels[i]) == len(retrieved_labels[i])
-    length = len(original_labels[i])
+def get_label_sequence(data_file):
     
-    for j in range(length):
-        if original_labels[i][j] != retrieved_labels[i][j]:
-            print(original_data[i]["tokens"])
-            print(f"label index: {j}")
-            print(f"clean label: {original_labels[i][j]}")
-            print(f"retrieved label: {retrieved_labels[i][j]}")
-            print("\n")
+    data = read_json(data_file)
 
-print("Done")
+    matched_entities, no_docs = match_entities(data)
+
+    return extract_label_seq(matched_entities, no_docs), no_docs
+
+
+def get_retrieved_label_sequences(runs, labelset):
+
+    retrieved_labels_seqs_cls = [None] * runs
+    retrieved_labels_seqs_sum = [None] * runs
+    for i in range(1, runs+1):
+        retrieved_file_cls = f"./results/{labelset}_cls_{i}.json"
+        retrieved_labels_seq_cls, _ = get_label_sequence(retrieved_file_cls)
+        retrieved_labels_seqs_cls[i-1] = retrieved_labels_seq_cls
+        
+        retrieved_file_sum = f"./results/{labelset}_sum_{i}.json"
+        retrieved_labels_seq_sum, _ = get_label_sequence(retrieved_file_sum)
+        retrieved_labels_seqs_sum[i-1] = retrieved_labels_seq_sum
+    
+    return retrieved_labels_seqs_cls, retrieved_labels_seqs_sum
+
+
+def write_parameters(labelset, split, k, lmbda):
+
+    with open(f"./results/results_{labelset}_k={k}.txt", "w") as result_file:
+        result_file.write("PARAMETERS: \n \n")
+        result_file.write(f"labelset: {labelset} \n")
+        result_file.write(f"split: {split} \n")
+        result_file.write(f"lambda: {lmbda} \n")
+        result_file.write(f"k: {k} \n \n \n")
+
+
+def write_scores(labelset, k, clean_labels, original_labels, retrieved_labels_cls, retrieved_labels_sum):
+
+    with open(f"./results/results_{labelset}_k={k}.txt", "a") as result_file:
+        result_file.write("CLS: \n \n")
+
+        for i in range(1,4):
+            result_file.write(f"Run {i}: \n \n")
+            result_file.write(f"File: ./results/{labelset}_cls_{i}.json \n \n")
+            result_file.write(f"F1: {f1_score(clean_labels, retrieved_labels_cls[i-1])} \n \n")
+            result_file.write(f"{classification_report(clean_labels, retrieved_labels_cls[i-1])} \n")
+            result_file.write(f"Relabeling rate: {1-accuracy_score(original_labels, retrieved_labels_cls[i-1])} \n \n \n")
+
+        result_file.write("SUM: \n \n")
+
+        for i in range(1,4):
+            result_file.write(f"Run {i}: \n \n")
+            result_file.write(f"File: ./results/{labelset}_sum_{i}.json \n \n")
+            result_file.write(f"F1: {f1_score(clean_labels, retrieved_labels_sum[i-1])} \n \n")
+            result_file.write(f"{classification_report(clean_labels, retrieved_labels_sum[i-1])} \n")
+            result_file.write(f"Relabeling rate: {1-accuracy_score(original_labels, retrieved_labels_sum[i-1])} \n \n \n")
+
+
+def relabeling_report(original_file, labelset, k, no_docs, original_labels, retrieved_labels_cls, retrieved_labels_sum):
+
+    original_data = read_json(original_file)
+
+    with open(f"./results/results_{labelset}_k={k}.txt", "a") as result_file:
+        result_file.write("QUALITATIVE RELABELING EVALUATION: \n \n")
+
+        for i in range(no_docs):
+            if original_labels[i] != retrieved_labels_cls[0][i] or original_labels[i] != retrieved_labels_sum[0][i]:
+                result_file.write("{:<20} {:<20} {:<20} {:<20} \n \n".format("Token", "Original", "CLS", "SUM"))
+                    
+                for j in range(len(original_data[i]["tokens"])):
+                    result_file.write("{:<20} {:<20} {:<20} {:<20} \n".format(f"{original_data[i]["tokens"][j]}", f"{original_labels[i][j]}", f"{retrieved_labels_cls[0][i][j]}", f"{retrieved_labels_sum[0][i][j]}"))
+                    
+                result_file.write("\n \n")
+
+
+
+def eval(labelset, split, k, lmbda, clean_file, original_file, runs):
+
+    write_parameters(labelset, split, k, lmbda)
+
+    clean_labels, no_docs = get_label_sequence(clean_file)
+    original_labels, _ = get_label_sequence(original_file)
+
+    retrieved_labels_cls, retrieved_labels_sum = get_retrieved_label_sequences(runs, labelset)
+
+    write_scores(labelset, k, clean_labels, original_labels, retrieved_labels_cls, retrieved_labels_sum)
+
+    relabeling_report(original_file, labelset, k, no_docs, original_labels, retrieved_labels_cls, retrieved_labels_sum)
+
+
+def main():
+    labelset = "original"
+    split = "train"
+    runs = 3
+    lmbda = 0.33
+    k = 3
+    clean_file = "./noisebench/conll03_clean_train.json"
+    original_file = "./noisebench/conll03_noisy_original_train.json"
+
+    eval(labelset, split, k, lmbda, clean_file, original_file, runs)
+
+
+if __name__ == "__main__":
+    main()
