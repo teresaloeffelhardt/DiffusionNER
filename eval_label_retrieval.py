@@ -152,16 +152,33 @@ def eval(labelset, split, k, lmbda, clean_file, original_file, runs):
     relabeling_report(original_file, labelset, k, no_docs, original_labels, retrieved_labels_cls, retrieved_labels_sum)
 
 
+def run(data_file_in, labelset, lmbda, k):
+
+    for i in range(1,4):
+        data_file_out = f"./results/{labelset}_cls_{i}.json"
+        print(f"Run {i} CLS started.")
+        lr.label_retrieval(data_file_in, data_file_out, "cls", lmbda, k)
+
+    for i in range(1,4):
+        data_file_out = f"./results/{labelset}_sum_{i}.json"
+        print(f"Run {i} SUM started.")
+        lr.label_retrieval(data_file_in, data_file_out, "sum", lmbda, k)
+
+
 def main():
-    labelset = "original"
-    split = "train"
-    runs = 3
+
+    data_file_in = "./noisebench/conll03_noisy_mv_oracle_train.json"
+    labelset = "mv_oracle"
     lmbda = 0.33
     k = 3
-    clean_file = "./noisebench/conll03_clean_train.json"
-    original_file = "./noisebench/conll03_noisy_original_train.json"
 
-    eval(labelset, split, k, lmbda, clean_file, original_file, runs)
+    run(data_file_in, labelset, lmbda, k)
+    
+    split = "train"
+    runs = 3
+    clean_file = "./noisebench/conll03_clean_train.json"
+
+    eval(labelset, split, k, lmbda, clean_file, data_file_in, runs)
 
 
 if __name__ == "__main__":
