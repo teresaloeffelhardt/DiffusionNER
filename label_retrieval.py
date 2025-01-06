@@ -42,7 +42,7 @@ def match_entities(data, lmbda):
         for i in range(len(doc["tokens"])):
             for j in range(1, 4):
                 if i+j < len(doc["tokens"]) and (i, i+j) not in pos_entities:
-                    if not any(not((k<i and l<=i+j) or (k>=i+j and l>i+j)) for (k,l) in pos_entities):
+                    if not any(not(l<=i or k>=i+j) for (k,l) in pos_entities):
                         neg_entities.append((i, i+j))
 
         matched_data_nes = negative_sampling_doc(doc, matched_data, doc_id, neg_entities, lmbda, last_entity_id=entity_id)  # sollte über origin sein
@@ -79,19 +79,23 @@ def negative_sampling_doc(doc, matched_data, doc_id, neg_entities, lmbda, last_e
     removed = -1
     while left_neg_entities and removed!=0:
         removed = 0
+        neg_sample_new = []
         for (i,j) in neg_sample:
-            if any(not(k==i and l==j) and not((k<i and l<=i) or (k>=j and l>j)) for (k,l) in neg_sample):
-                neg_sample.remove((i,j))
+            if not any(not(k==i and l==j) and not(l<=i or k>=j) for (k,l) in neg_sample_new):
+                neg_sample_new.append((i,j))
                 removed+=1
+        neg_sample = neg_sample_new
         if removed > len(left_neg_entities):
             removed = len(left_neg_entities)
         add_neg_sample = random.sample(left_neg_entities, removed)
         left_neg_entities = list(set(left_neg_entities)-set(add_neg_sample))
         neg_sample += add_neg_sample
     
+    neg_sample_new = []
     for (i,j) in neg_sample:
-        if any(not(k==i and l==j) and not((k<i and l<=i) or (k>=j and l>j)) for (k,l) in neg_sample):
-            neg_sample.remove((i,j))
+        if not any(not(k==i and l==j) and not(l<=i or k>=j ) for (k,l) in neg_sample_new):
+            neg_sample_new.append((i,j))
+    neg_sample = neg_sample_new
 
     entity_id = last_entity_id
     for (i,j) in neg_sample:
@@ -219,8 +223,6 @@ def knn(matched_data, origins, k):
         for doc_id in origins[orig_id]["docs"]:
             for entity_id in matched_data[doc_id]:
                 if entity_id != "orig_id":
-                    # entity_dist_vector = torch.nn.functional.cosine_similarity(matched_data[doc_id][entity_id]["embedding"], origins[orig_id]["embeddings"])
-                        # unsqueeze(0) erstes Argument und dim=1 ?
                     entity_dist_vector = torch.zeros(len(origins[orig_id]["embeddings"]))
                     for i in range(len(origins[orig_id]["embeddings"])):
                         entity_dist_vector[i] = torch.nn.functional.cosine_similarity(matched_data[doc_id][entity_id]["embedding"], origins[orig_id]["embeddings"][i])
@@ -267,20 +269,23 @@ def write_json(matched_data, data, data_file_out):
 
 
 
-def label_retrieval(data_file_in, data_file_out):
+def label_retrieval(data_file_in, data_file_out, similarity_embedding, lmbda, k):
 
     data = read_json(data_file_in)
-    matched_data, origins = match_entities(data, lmbda=0.33)            # Menge von der gesampled wird sehr klein -> Parameter -> oder globaleres Sampling
+    matched_data, origins = match_entities(data, lmbda)
     matched_data_sorted = sort_entities(matched_data, origins)
-    matched_data_embd, origins_embd = similarity_embedding_cls(matched_data_sorted, origins)
-    matched_data_knn = knn(matched_data_embd, origins_embd, k=10)
+    if similarity_embedding == "cls":
+        matched_data_embd, origins_embd = similarity_embedding_cls(matched_data_sorted, origins)
+    elif similarity_embedding == "sum":
+        matched_data_embd, origins_embd = similarity_embedding_sum(matched_data_sorted, origins)
+    matched_data_knn = knn(matched_data_embd, origins_embd, k)
     write_json(matched_data_knn, data, data_file_out)
 
 
 def main():
-    data_file_in = "./test.json"
-    data_file_out = "./results/test_lr_cls_k10.json"
-    label_retrieval(data_file_in, data_file_out)
+    data_file_in = "./noisebench/conll03_noisy_original_train.json"
+    data_file_out = "./results/original_cls_debugging.json"
+    label_retrieval(data_file_in, data_file_out, "cls", 0.33, 3)
 
 
 if __name__ == "__main__":
