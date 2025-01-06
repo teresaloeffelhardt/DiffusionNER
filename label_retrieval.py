@@ -45,7 +45,10 @@ def match_entities(data, lmbda):
                     if not any(not(l<=i or k>=i+j) for (k,l) in pos_entities):
                         neg_entities.append((i, i+j))
 
-        matched_data_nes = negative_sampling_doc(doc, matched_data, doc_id, neg_entities, lmbda, last_entity_id=entity_id)  # sollte über origin sein
+        if lmbda > 0:
+            matched_data_nes = negative_sampling_doc(doc, matched_data, doc_id, neg_entities, lmbda, last_entity_id=entity_id)
+        else:
+            matched_data_nes = matched_data
 
         if doc["orig_id"] in origins:
             origins[doc["orig_id"]]["docs"][f"doc_{doc_id}"] = doc["tokens"]

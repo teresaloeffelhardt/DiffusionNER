@@ -72,25 +72,25 @@ def get_label_sequence(data_file):
     return extract_label_seq(matched_entities, no_docs), no_docs
 
 
-def get_retrieved_label_sequences(runs, labelset):
+def get_retrieved_label_sequences(runs, labelset, offset):
 
     retrieved_labels_seqs_cls = [None] * runs
     retrieved_labels_seqs_sum = [None] * runs
     for i in range(1, runs+1):
-        retrieved_file_cls = f"./results/{labelset}_cls_{i}.json"
+        retrieved_file_cls = f"./results/{labelset}_cls_{i+offset}.json"
         retrieved_labels_seq_cls, _ = get_label_sequence(retrieved_file_cls)
         retrieved_labels_seqs_cls[i-1] = retrieved_labels_seq_cls
         
-        retrieved_file_sum = f"./results/{labelset}_sum_{i}.json"
+        retrieved_file_sum = f"./results/{labelset}_sum_{i+offset}.json"
         retrieved_labels_seq_sum, _ = get_label_sequence(retrieved_file_sum)
         retrieved_labels_seqs_sum[i-1] = retrieved_labels_seq_sum
     
     return retrieved_labels_seqs_cls, retrieved_labels_seqs_sum
 
 
-def write_parameters(labelset, split, k, lmbda):
+def write_parameters(labelset, split, k, lmbda, offset):
 
-    with open(f"./results/results_{labelset}_k={k}.txt", "w") as result_file:
+    with open(f"./results/results_{labelset}_{offset+1}.txt", "w") as result_file:
         result_file.write("PARAMETERS: \n \n")
         result_file.write(f"labelset: {labelset} \n")
         result_file.write(f"split: {split} \n")
@@ -98,87 +98,88 @@ def write_parameters(labelset, split, k, lmbda):
         result_file.write(f"k: {k} \n \n \n")
 
 
-def write_scores(labelset, k, clean_labels, original_labels, retrieved_labels_cls, retrieved_labels_sum):
+def write_scores(labelset, k, runs, clean_labels, original_labels, retrieved_labels_cls, retrieved_labels_sum, offset):
 
-    with open(f"./results/results_{labelset}_k={k}.txt", "a") as result_file:
+    with open(f"./results/results_{labelset}_{offset+1}.txt", "a") as result_file:
         result_file.write("CLS: \n \n")
 
-        for i in range(1,4):
+        for i in range(1, runs+1):
             result_file.write(f"Run {i}: \n \n")
-            result_file.write(f"File: ./results/{labelset}_cls_{i}.json \n \n")
+            result_file.write(f"File: ./results/{labelset}_cls_{i+offset}.json \n \n")
             result_file.write(f"F1: {f1_score(clean_labels, retrieved_labels_cls[i-1])} \n \n")
             result_file.write(f"{classification_report(clean_labels, retrieved_labels_cls[i-1])} \n")
             result_file.write(f"Relabeling rate: {1-accuracy_score(original_labels, retrieved_labels_cls[i-1])} \n \n \n")
 
         result_file.write("SUM: \n \n")
 
-        for i in range(1,4):
+        for i in range(1, runs+1):
             result_file.write(f"Run {i}: \n \n")
-            result_file.write(f"File: ./results/{labelset}_sum_{i}.json \n \n")
+            result_file.write(f"File: ./results/{labelset}_sum_{i+offset}.json \n \n")
             result_file.write(f"F1: {f1_score(clean_labels, retrieved_labels_sum[i-1])} \n \n")
             result_file.write(f"{classification_report(clean_labels, retrieved_labels_sum[i-1])} \n")
             result_file.write(f"Relabeling rate: {1-accuracy_score(original_labels, retrieved_labels_sum[i-1])} \n \n \n")
 
 
-def relabeling_report(original_file, labelset, k, no_docs, original_labels, retrieved_labels_cls, retrieved_labels_sum):
+def relabeling_report(original_file, labelset, k, no_docs, original_labels, clean_labels, retrieved_labels_cls, retrieved_labels_sum, offset):
 
     original_data = read_json(original_file)
 
-    with open(f"./results/results_{labelset}_k={k}.txt", "a") as result_file:
+    with open(f"./results/results_{labelset}_{offset+1}.txt", "a") as result_file:
         result_file.write("QUALITATIVE RELABELING EVALUATION: \n \n")
 
         for i in range(no_docs):
             if original_labels[i] != retrieved_labels_cls[0][i] or original_labels[i] != retrieved_labels_sum[0][i]:
-                result_file.write("{:<20} {:<20} {:<20} {:<20} \n \n".format("Token", "Original", "CLS", "SUM"))
+                result_file.write("{:<20} {:<20} {:<20} {:<20} {:<20} \n \n".format("Token", "Clean", "Original", "CLS", "SUM"))
                     
                 for j in range(len(original_data[i]["tokens"])):
-                    result_file.write("{:<20} {:<20} {:<20} {:<20} \n".format(f"{original_data[i]["tokens"][j]}", f"{original_labels[i][j]}", f"{retrieved_labels_cls[0][i][j]}", f"{retrieved_labels_sum[0][i][j]}"))
+                    result_file.write("{:<20} {:<20} {:<20} {:<20} {:<20} \n".format(f"{original_data[i]["tokens"][j]}", f"{clean_labels[i][j]}", f"{original_labels[i][j]}", f"{retrieved_labels_cls[0][i][j]}", f"{retrieved_labels_sum[0][i][j]}"))
                     
                 result_file.write("\n \n")
 
 
 
-def eval(labelset, split, k, lmbda, clean_file, original_file, runs):
+def eval(labelset, split, k, lmbda, clean_file, original_file, runs, offset):
 
-    write_parameters(labelset, split, k, lmbda)
+    write_parameters(labelset, split, k, lmbda, offset)
 
     clean_labels, no_docs = get_label_sequence(clean_file)
     original_labels, _ = get_label_sequence(original_file)
 
-    retrieved_labels_cls, retrieved_labels_sum = get_retrieved_label_sequences(runs, labelset)
+    retrieved_labels_cls, retrieved_labels_sum = get_retrieved_label_sequences(runs, labelset, offset)
 
-    write_scores(labelset, k, clean_labels, original_labels, retrieved_labels_cls, retrieved_labels_sum)
+    write_scores(labelset, k, runs, clean_labels, original_labels, retrieved_labels_cls, retrieved_labels_sum, offset)
 
-    relabeling_report(original_file, labelset, k, no_docs, original_labels, retrieved_labels_cls, retrieved_labels_sum)
+    relabeling_report(original_file, labelset, k, no_docs, original_labels, clean_labels, retrieved_labels_cls, retrieved_labels_sum, offset)
 
 
-def run(data_file_in, labelset, lmbda, k):
+def run(data_file_in, labelset, lmbda, k, runs, offset):
 
-    for i in range(1,4):
-        data_file_out = f"./results/{labelset}_cls_{i}.json"
+    for i in range(1, runs+1):
+        data_file_out = f"./results/{labelset}_cls_{i+offset}.json"
         print(f"Run {i} CLS started.")
         lr.label_retrieval(data_file_in, data_file_out, "cls", lmbda, k)
 
-    for i in range(1,4):
-        data_file_out = f"./results/{labelset}_sum_{i}.json"
+    for i in range(1, runs+1):
+        data_file_out = f"./results/{labelset}_sum_{i+offset}.json"
         print(f"Run {i} SUM started.")
         lr.label_retrieval(data_file_in, data_file_out, "sum", lmbda, k)
 
 
 def main():
 
-    data_file_in = "./noisebench/conll03_noisy_mv_oracle_train.json"
-    labelset = "mv_oracle"
+    data_file_in = "./noisebench/conll03_noisy_original_train.json"
+    labelset = "original"
     lmbda = 0.33
-    k = 3
+    k = 5
+    runs = 3
+    offset = 4
 
-    run(data_file_in, labelset, lmbda, k)
+    run(data_file_in, labelset, lmbda, k, runs, offset)
     
     split = "train"
-    runs = 3
     clean_file = "./noisebench/conll03_clean_train.json"
 
-    eval(labelset, split, k, lmbda, clean_file, data_file_in, runs)
+    eval(labelset, split, k, lmbda, clean_file, data_file_in, runs, offset)
 
 
 if __name__ == "__main__":
