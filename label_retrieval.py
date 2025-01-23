@@ -5,6 +5,9 @@ from transformers import BertConfig, BertTokenizer
 from diffusionner.modeling_bert import BertEmbeddings as DiffusionNERBertEmbeddings
 import torch
 from flair.embeddings import TransformerDocumentEmbeddings, TransformerWordEmbeddings
+from flair.datasets.sequence_labeling import NER_NOISEBENCH
+from flair.models import SequenceTagger
+from flair.trainers import ModelTrainer
 from flair.data import Sentence
 from collections import Counter
 
@@ -62,20 +65,20 @@ def match_entities(data, lmbda):
 
 def negative_sampling_doc(doc, matched_data, doc_id, neg_entities, lmbda, last_entity_id):
 
-    # sample_size = math.ceil(lmbda * len(doc["tokens"]))                     # durch runden sind es jedes Mal zu viele im doc
+    # sample_size = math.ceil(lmbda * len(doc["tokens"]))                     
     
     n_entities = len(matched_data[f"doc_{doc_id}"])-1                          # kann in ungelabelten Sätzen auch nicht mehr labeln
     sample_size_float = lmbda * n_entities
     sample_size_int = int(sample_size_float)
     sample_size_frac = sample_size_float-sample_size_int
-    if random.random() < sample_size_frac:                                    # nicht mehr deterministisch! - nicht gut?
+    if random.random() < sample_size_frac:                                    
         sample_size = sample_size_int+1
     else:
         sample_size = sample_size_int
 
     neg_entities_size = len(neg_entities)
     if sample_size > neg_entities_size:
-        sample_size = neg_entities_size                                  #  besseren Weg bzw. lmbda*neg_entities_size immer nehmen?
+        sample_size = neg_entities_size                                  
     neg_sample = random.sample(neg_entities, sample_size)
 
     left_neg_entities = list(set(neg_entities)-set(neg_sample))          # in diesem Abschnitt direkt mit sets arbeiten und erst am Ende wieder Conversion?
@@ -166,9 +169,35 @@ def similarity_embedding_cls_difner(matched_data, origins):
     return matched_data, origins
 
 
-def similarity_embedding_cls(matched_data, origins):
+def similarity_embedding_cls(labelset, fine_tune, matched_data, origins, ft_epochs):
     
-    bert_embeddings = TransformerDocumentEmbeddings('bert-large-cased', subtoken_pooling='mean')
+    # bert_embeddings = TransformerDocumentEmbeddings('bert-large-cased', subtoken_pooling='mean', fine_tune=True) # use_context for fine-tuning?
+    bert_embeddings = TransformerWordEmbeddings('bert-large-cased', is_document_embedding=True, subtoken_pooling='mean', fine_tune=True) # use_context for fine-tuning?
+
+    # TransformerWordEmbeddings + .document_cls_pooling ?
+    # TransformerWordEmbeddings + is_document_embedding ?
+    # kombination ? - nochmal checken, ob das valide ist & das CLS-embedding ausgibt
+    
+    if fine_tune:
+        print("\t Fine-Tuning started.")
+        corpus = NER_NOISEBENCH(noise=labelset)                  
+        label_dict = corpus.make_label_dictionary(label_type='ner', add_unk=False)
+        tagger = SequenceTagger(hidden_size=256,
+                            embeddings=bert_embeddings,
+                            tag_dictionary=label_dict,
+                            tag_type='ner',
+                            use_crf=False,
+                            use_rnn=False,
+                            reproject_embeddings=False,
+                            )
+        trainer = ModelTrainer(tagger, corpus)
+        trainer.fine_tune(f'results/fine_tune_{labelset}',     
+                    learning_rate=5.0e-6,
+                    mini_batch_size=4,
+                    mini_batch_chunk_size=1,
+                    max_epochs=ft_epochs,                       
+                    )
+        print("\t Fine-Tuning completed.")
 
     for orig_id in origins:
         origins[orig_id]["embeddings"] = torch.zeros(origins[orig_id]["n_entities"], 1, 1024)
@@ -191,9 +220,30 @@ def similarity_embedding_cls(matched_data, origins):
     return matched_data, origins
 
 
-def similarity_embedding_sum(matched_data, origins):       
+def similarity_embedding_sum(labelset, fine_tune, matched_data, origins, ft_epochs):       
 
-    bert_embeddings = TransformerWordEmbeddings('bert-large-cased', subtoken_pooling='mean')
+    bert_embeddings = TransformerWordEmbeddings('bert-large-cased', subtoken_pooling='mean', fine_tune=True)
+
+    if fine_tune:
+        print("\t Fine-Tuning started.")
+        corpus = NER_NOISEBENCH(noise=labelset)                  # make generally usable - auf clean fine-tunen?
+        label_dict = corpus.make_label_dictionary(label_type='ner', add_unk=False)
+        tagger = SequenceTagger(hidden_size=256,
+                            embeddings=bert_embeddings,
+                            tag_dictionary=label_dict,
+                            tag_type='ner',
+                            use_crf=False,
+                            use_rnn=False,
+                            reproject_embeddings=False,
+                            )
+        trainer = ModelTrainer(tagger, corpus)
+        trainer.fine_tune(f'results/fine_tune_{labelset}',      
+                    learning_rate=5.0e-6,
+                    mini_batch_size=4,
+                    mini_batch_chunk_size=1,
+                    max_epochs=ft_epochs,                        
+                    )                                    
+        print("\t Fine-Tuning completed.")
 
     for orig_id in origins:
         origins[orig_id]["embeddings"] = torch.zeros(origins[orig_id]["n_entities"], 1, 1024)       
@@ -272,20 +322,21 @@ def write_json(matched_data, data, data_file_out):
 
 
 
-def label_retrieval(data_file_in, data_file_out, similarity_embedding, lmbda, k):
+def label_retrieval(data_file_in, data_file_out, similarity_embedding, lmbda, k, labelset, fine_tune, ft_epochs):
 
     data = read_json(data_file_in)
     matched_data, origins = match_entities(data, lmbda)
     matched_data_sorted = sort_entities(matched_data, origins)
     if similarity_embedding == "cls":
-        matched_data_embd, origins_embd = similarity_embedding_cls(matched_data_sorted, origins)
+        matched_data_embd, origins_embd = similarity_embedding_cls(labelset, fine_tune, matched_data_sorted, origins, ft_epochs)
     elif similarity_embedding == "sum":
-        matched_data_embd, origins_embd = similarity_embedding_sum(matched_data_sorted, origins)
+        matched_data_embd, origins_embd = similarity_embedding_sum(labelset, fine_tune, matched_data_sorted, origins, ft_epochs)
     matched_data_knn = knn(matched_data_embd, origins_embd, k)
     write_json(matched_data_knn, data, data_file_out)
 
 
 def main():
+    # veraltet
     data_file_in = "./noisebench/conll03_noisy_original_train.json"
     data_file_out = "./results/original_cls_debugging.json"
     label_retrieval(data_file_in, data_file_out, "cls", 0.33, 3)

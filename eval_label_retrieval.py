@@ -88,14 +88,19 @@ def get_retrieved_label_sequences(runs, labelset, offset):
     return retrieved_labels_seqs_cls, retrieved_labels_seqs_sum
 
 
-def write_parameters(labelset, split, k, lmbda, offset):
+def write_parameters(labelset, split, k, lmbda, offset, fine_tune, ft_epochs):
 
     with open(f"./results/results_{labelset}_{offset+1}.txt", "w") as result_file:
         result_file.write("PARAMETERS: \n \n")
         result_file.write(f"labelset: {labelset} \n")
         result_file.write(f"split: {split} \n")
         result_file.write(f"lambda: {lmbda} \n")
-        result_file.write(f"k: {k} \n \n \n")
+        result_file.write(f"k: {k} \n")
+        if fine_tune:
+            result_file.write(f"fine-tune: {str(fine_tune)} \n")
+            result_file.write(f"ft_max_epochs: {ft_epochs} \n \n \n")
+        else:
+            result_file.write(f"fine-tune: {str(fine_tune)} \n \n \n")
 
 
 def write_scores(labelset, k, runs, clean_labels, original_labels, retrieved_labels_cls, retrieved_labels_sum, offset):
@@ -132,15 +137,15 @@ def relabeling_report(original_file, labelset, k, no_docs, original_labels, clea
                 result_file.write("{:<20} {:<20} {:<20} {:<20} {:<20} \n \n".format("Token", "Clean", "Original", "CLS", "SUM"))
                     
                 for j in range(len(original_data[i]["tokens"])):
-                    result_file.write("{:<20} {:<20} {:<20} {:<20} {:<20} \n".format(f"{original_data[i]["tokens"][j]}", f"{clean_labels[i][j]}", f"{original_labels[i][j]}", f"{retrieved_labels_cls[0][i][j]}", f"{retrieved_labels_sum[0][i][j]}"))
+                    result_file.write("{:<20} {:<20} {:<20} {:<20} {:<20} \n".format(f"{original_data[i]['tokens'][j]}", f"{clean_labels[i][j]}", f"{original_labels[i][j]}", f"{retrieved_labels_cls[0][i][j]}", f"{retrieved_labels_sum[0][i][j]}"))
                     
                 result_file.write("\n \n")
 
 
 
-def eval(labelset, split, k, lmbda, clean_file, original_file, runs, offset):
+def eval(labelset, split, k, lmbda, clean_file, original_file, runs, offset, fine_tune, ft_epochs):
 
-    write_parameters(labelset, split, k, lmbda, offset)
+    write_parameters(labelset, split, k, lmbda, offset, fine_tune, ft_epochs)
 
     clean_labels, no_docs = get_label_sequence(clean_file)
     original_labels, _ = get_label_sequence(original_file)
@@ -152,34 +157,36 @@ def eval(labelset, split, k, lmbda, clean_file, original_file, runs, offset):
     relabeling_report(original_file, labelset, k, no_docs, original_labels, clean_labels, retrieved_labels_cls, retrieved_labels_sum, offset)
 
 
-def run(data_file_in, labelset, lmbda, k, runs, offset):
+def run(data_file_in, labelset, lmbda, k, runs, offset, fine_tune, ft_epochs):
 
     for i in range(1, runs+1):
         data_file_out = f"./results/{labelset}_cls_{i+offset}.json"
         print(f"Run {i} CLS started.")
-        lr.label_retrieval(data_file_in, data_file_out, "cls", lmbda, k)
+        lr.label_retrieval(data_file_in, data_file_out, "cls", lmbda, k, labelset, fine_tune, ft_epochs)
 
     for i in range(1, runs+1):
         data_file_out = f"./results/{labelset}_sum_{i+offset}.json"
         print(f"Run {i} SUM started.")
-        lr.label_retrieval(data_file_in, data_file_out, "sum", lmbda, k)
+        lr.label_retrieval(data_file_in, data_file_out, "sum", lmbda, k, labelset, fine_tune, ft_epochs)
 
 
 def main():
 
-    data_file_in = "./noisebench/conll03_noisy_original_train.json"
-    labelset = "original"
-    lmbda = 0.33
-    k = 5
-    runs = 3
-    offset = 4
+    labelset = "expert"
+    data_file_in = f"./noisebench/conll03_noisy_original_train.json"
+    lmbda = 0
+    k = 3
+    fine_tune = True
+    ft_epochs = 2
+    runs = 1
+    offset = 7
 
-    run(data_file_in, labelset, lmbda, k, runs, offset)
+    run(data_file_in, labelset, lmbda, k, runs, offset, fine_tune, ft_epochs)
     
     split = "train"
-    clean_file = "./noisebench/conll03_clean_train.json"
+    clean_file = f"./noisebench/conll03_clean_train.json"
 
-    eval(labelset, split, k, lmbda, clean_file, data_file_in, runs, offset)
+    eval(labelset, split, k, lmbda, clean_file, data_file_in, runs, offset, fine_tune, ft_epochs)
 
 
 if __name__ == "__main__":
