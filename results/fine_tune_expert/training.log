@@ -1,0 +1,74 @@
+2025-01-23 10:29:30,021 ----------------------------------------------------------------------------------------------------
+2025-01-23 10:29:30,023 Model: "SequenceTagger(
+  (embeddings): TransformerWordEmbeddings(
+    (model): BertModel(
+      (embeddings): BertEmbeddings(
+        (word_embeddings): Embedding(28997, 1024)
+        (position_embeddings): Embedding(512, 1024)
+        (token_type_embeddings): Embedding(2, 1024)
+        (LayerNorm): LayerNorm((1024,), eps=1e-12, elementwise_affine=True)
+        (dropout): Dropout(p=0.1, inplace=False)
+      )
+      (encoder): BertEncoder(
+        (layer): ModuleList(
+          (0-23): 24 x BertLayer(
+            (attention): BertAttention(
+              (self): BertSelfAttention(
+                (query): Linear(in_features=1024, out_features=1024, bias=True)
+                (key): Linear(in_features=1024, out_features=1024, bias=True)
+                (value): Linear(in_features=1024, out_features=1024, bias=True)
+                (dropout): Dropout(p=0.1, inplace=False)
+              )
+              (output): BertSelfOutput(
+                (dense): Linear(in_features=1024, out_features=1024, bias=True)
+                (LayerNorm): LayerNorm((1024,), eps=1e-12, elementwise_affine=True)
+                (dropout): Dropout(p=0.1, inplace=False)
+              )
+            )
+            (intermediate): BertIntermediate(
+              (dense): Linear(in_features=1024, out_features=4096, bias=True)
+              (intermediate_act_fn): GELUActivation()
+            )
+            (output): BertOutput(
+              (dense): Linear(in_features=4096, out_features=1024, bias=True)
+              (LayerNorm): LayerNorm((1024,), eps=1e-12, elementwise_affine=True)
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+          )
+        )
+      )
+      (pooler): BertPooler(
+        (dense): Linear(in_features=1024, out_features=1024, bias=True)
+        (activation): Tanh()
+      )
+    )
+  )
+  (locked_dropout): LockedDropout(p=0.5)
+  (linear): Linear(in_features=1024, out_features=17, bias=True)
+  (loss_function): CrossEntropyLoss()
+)"
+2025-01-23 10:29:30,023 ----------------------------------------------------------------------------------------------------
+2025-01-23 10:29:30,023 Corpus: 5215 train + 1070 dev + 3658 test sentences
+2025-01-23 10:29:30,023 ----------------------------------------------------------------------------------------------------
+2025-01-23 10:29:30,023 Train:  5215 sentences
+2025-01-23 10:29:30,023         (train_with_dev=False, train_with_test=False)
+2025-01-23 10:29:30,024 ----------------------------------------------------------------------------------------------------
+2025-01-23 10:29:30,024 Training Params:
+2025-01-23 10:29:30,024  - learning_rate: "5e-06" 
+2025-01-23 10:29:30,024  - mini_batch_size: "4"
+2025-01-23 10:29:30,024  - max_epochs: "2"
+2025-01-23 10:29:30,024  - shuffle: "True"
+2025-01-23 10:29:30,024 ----------------------------------------------------------------------------------------------------
+2025-01-23 10:29:30,024 Plugins:
+2025-01-23 10:29:30,024  - LinearScheduler | warmup_fraction: '0.1'
+2025-01-23 10:29:30,024 ----------------------------------------------------------------------------------------------------
+2025-01-23 10:29:30,024 Final evaluation on model after last epoch (final-model.pt)
+2025-01-23 10:29:30,024  - metric: "('micro avg', 'f1-score')"
+2025-01-23 10:29:30,024 ----------------------------------------------------------------------------------------------------
+2025-01-23 10:29:30,024 Computation:
+2025-01-23 10:29:30,024  - compute on device: cpu
+2025-01-23 10:29:30,025  - embedding storage: none
+2025-01-23 10:29:30,025 ----------------------------------------------------------------------------------------------------
+2025-01-23 10:29:30,025 Model training base path: "results/fine_tune_expert"
+2025-01-23 10:29:30,025 ----------------------------------------------------------------------------------------------------
+2025-01-23 10:29:30,025 ----------------------------------------------------------------------------------------------------

@@ -171,8 +171,10 @@ def similarity_embedding_cls_difner(matched_data, origins):
 
 def similarity_embedding_cls(labelset, fine_tune, matched_data, origins, ft_epochs):
     
-    # bert_embeddings = TransformerDocumentEmbeddings('bert-large-cased', subtoken_pooling='mean', fine_tune=True) # use_context for fine-tuning?
-    bert_embeddings = TransformerWordEmbeddings('bert-large-cased', is_document_embedding=True, subtoken_pooling='mean', fine_tune=True) # use_context for fine-tuning?
+    if fine_tune:
+        bert_embeddings = TransformerWordEmbeddings('bert-large-cased', is_document_embedding=True, subtoken_pooling='mean', fine_tune=True) # use_context for fine-tuning?
+    else:
+        bert_embeddings = TransformerDocumentEmbeddings('bert-large-cased', subtoken_pooling='mean', fine_tune=True) # use_context for fine-tuning?
 
     # TransformerWordEmbeddings + .document_cls_pooling ?
     # TransformerWordEmbeddings + is_document_embedding ?
@@ -283,12 +285,19 @@ def knn(matched_data, origins, k):
                     if entity_dist_vector.shape[0] >= k:
                         _, entity_knn_indices = entity_dist_vector.topk(k, largest=True)
 
+                        # neighborhood printing
+                        neighborhood = [matched_data[doc_id][entity_id]["text"]]
+
                         entity_knn_indices_list = entity_knn_indices.tolist()
                         entity_knn_labels = []
                         for doc_id_other in origins[orig_id]["docs"]:
                             for entity_id_other in matched_data[doc_id_other]:
                                 if entity_id_other != "orig_id":
                                     if matched_data[doc_id_other][entity_id_other]["index"] in entity_knn_indices_list:
+
+                                        # neighborhood printing
+                                        neighborhood.append(matched_data[doc_id_other][entity_id_other]["text"])
+
                                         entity_knn_labels.append(matched_data[doc_id_other][entity_id_other]["label"])
                                         entity_knn_indices_list.remove(matched_data[doc_id_other][entity_id_other]["index"])
 
@@ -297,6 +306,9 @@ def knn(matched_data, origins, k):
                             majority_label, _ = counter.most_common(1)[0]
 
                             matched_data[doc_id][entity_id]["label"] = majority_label         # konditionieren? - weniger write/runtime?
+                        
+                        # neighborhood printing
+                        print(neighborhood)
 
     return matched_data
 

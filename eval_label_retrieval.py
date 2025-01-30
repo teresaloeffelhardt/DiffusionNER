@@ -172,14 +172,25 @@ def run(data_file_in, labelset, lmbda, k, runs, offset, fine_tune, ft_epochs):
 
 def main():
 
-    labelset = "expert"
-    data_file_in = f"./noisebench/conll03_noisy_original_train.json"
+    # flair.device = torch.device('cuda:0')
+
+    # labelset = "expert"
+    # data_file_in = f"./noisebench/conll03_noisy_original_train.json"
+    # lmbda = 0
+    # k = 3
+    # fine_tune = True
+    # ft_epochs = 2
+    # runs = 1
+    # offset = 7
+
+    labelset = "weak"
+    data_file_in = f"./noisebench/conll03_noisy_wrench_train.json"
     lmbda = 0
     k = 3
-    fine_tune = True
+    fine_tune = False
     ft_epochs = 2
     runs = 1
-    offset = 7
+    offset = 1
 
     run(data_file_in, labelset, lmbda, k, runs, offset, fine_tune, ft_epochs)
     
