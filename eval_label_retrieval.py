@@ -183,9 +183,9 @@ def main():
     # runs = 1
     # offset = 7
 
-    labelset = "weak"
-    data_file_in = f"./noisebench/conll03_noisy_wrench_train.json"
-    lmbda = 0
+    labelset = "distant"
+    data_file_in = f"./noisebench/conll03_noisy_bond_train.json"
+    lmbda = 0.33
     k = 3
     fine_tune = False
     ft_epochs = 2

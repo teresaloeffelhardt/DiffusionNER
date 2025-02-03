@@ -272,7 +272,11 @@ def similarity_embedding_sum(labelset, fine_tune, matched_data, origins, ft_epoc
     return matched_data, origins
 
 
-def knn(matched_data, origins, k):
+def knn(matched_data, origins, k, similarity_embedding):
+
+    # with open(f"./results/neighborhoods_{similarity_embedding}.txt", "w") as nh_file:
+    #     nh_file.write(f"NEIGHBORHOODS for {similarity_embedding.upper()} \n \n")
+    #     nh_file.write("A tuple indicates the neighborhood of the first element. \n \n")
 
     for orig_id in origins:
         for doc_id in origins[orig_id]["docs"]:
@@ -285,8 +289,7 @@ def knn(matched_data, origins, k):
                     if entity_dist_vector.shape[0] >= k:
                         _, entity_knn_indices = entity_dist_vector.topk(k, largest=True)
 
-                        # neighborhood printing
-                        neighborhood = [matched_data[doc_id][entity_id]["text"]]
+                        # neighborhood = [matched_data[doc_id][entity_id]["text"]]
 
                         entity_knn_indices_list = entity_knn_indices.tolist()
                         entity_knn_labels = []
@@ -294,9 +297,8 @@ def knn(matched_data, origins, k):
                             for entity_id_other in matched_data[doc_id_other]:
                                 if entity_id_other != "orig_id":
                                     if matched_data[doc_id_other][entity_id_other]["index"] in entity_knn_indices_list:
-
-                                        # neighborhood printing
-                                        neighborhood.append(matched_data[doc_id_other][entity_id_other]["text"])
+                                        
+                                        # neighborhood.append(matched_data[doc_id_other][entity_id_other]["text"])
 
                                         entity_knn_labels.append(matched_data[doc_id_other][entity_id_other]["label"])
                                         entity_knn_indices_list.remove(matched_data[doc_id_other][entity_id_other]["index"])
@@ -307,8 +309,8 @@ def knn(matched_data, origins, k):
 
                             matched_data[doc_id][entity_id]["label"] = majority_label         # konditionieren? - weniger write/runtime?
                         
-                        # neighborhood printing
-                        print(neighborhood)
+                        # with open(f"./results/neighborhoods_{similarity_embedding}.txt", "a") as nh_file:
+                        #     nh_file.write(f"{neighborhood} \n")
 
     return matched_data
 
@@ -343,7 +345,7 @@ def label_retrieval(data_file_in, data_file_out, similarity_embedding, lmbda, k,
         matched_data_embd, origins_embd = similarity_embedding_cls(labelset, fine_tune, matched_data_sorted, origins, ft_epochs)
     elif similarity_embedding == "sum":
         matched_data_embd, origins_embd = similarity_embedding_sum(labelset, fine_tune, matched_data_sorted, origins, ft_epochs)
-    matched_data_knn = knn(matched_data_embd, origins_embd, k)
+    matched_data_knn = knn(matched_data_embd, origins_embd, k, similarity_embedding)
     write_json(matched_data_knn, data, data_file_out)
 
 
