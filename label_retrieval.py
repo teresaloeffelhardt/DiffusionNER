@@ -1,8 +1,8 @@
 import json
 import math
 import random
-from transformers import BertConfig, BertTokenizer
-from diffusionner.modeling_bert import BertEmbeddings as DiffusionNERBertEmbeddings
+# from transformers import BertConfig, BertTokenizer
+# from diffusionner.modeling_bert import BertEmbeddings as DiffusionNERBertEmbeddings
 import torch
 from flair.embeddings import TransformerDocumentEmbeddings, TransformerWordEmbeddings
 from flair.datasets.sequence_labeling import NER_NOISEBENCH
@@ -143,30 +143,30 @@ def sort_entities(matched_data, origins):
     return matched_data
 
 
-def similarity_embedding_cls_difner(matched_data, origins):
+# def similarity_embedding_cls_difner(matched_data, origins):
     
-    bert_config = BertConfig.from_pretrained('bert-large-cased')         
-    bert_tokenizer = BertTokenizer.from_pretrained('bert-large-cased')
-    bert_embeddings = DiffusionNERBertEmbeddings(bert_config)                           
+#     bert_config = BertConfig.from_pretrained('bert-large-cased')         
+#     bert_tokenizer = BertTokenizer.from_pretrained('bert-large-cased')
+#     bert_embeddings = DiffusionNERBertEmbeddings(bert_config)                           
 
-    for orig_id in origins:
-        origins[orig_id]["embeddings"] = torch.zeros(origins[orig_id]["n_entities"], 1, 1024)
+#     for orig_id in origins:
+#         origins[orig_id]["embeddings"] = torch.zeros(origins[orig_id]["n_entities"], 1, 1024)
 
-        i = 0
-        for doc_id in origins[orig_id]["docs"]:
-            for entity_id in matched_data[doc_id]:
-                if entity_id != "orig_id":
-                    entity_token_ids = torch.tensor(bert_tokenizer.encode(matched_data[doc_id][entity_id]["text"], add_special_tokens=True)).unsqueeze(0)
-                    with torch.no_grad():
-                        entity_embedding = bert_embeddings(input_ids=entity_token_ids)
-                    entity_cls_embedding = entity_embedding[:, 0, :]
+#         i = 0
+#         for doc_id in origins[orig_id]["docs"]:
+#             for entity_id in matched_data[doc_id]:
+#                 if entity_id != "orig_id":
+#                     entity_token_ids = torch.tensor(bert_tokenizer.encode(matched_data[doc_id][entity_id]["text"], add_special_tokens=True)).unsqueeze(0)
+#                     with torch.no_grad():
+#                         entity_embedding = bert_embeddings(input_ids=entity_token_ids)
+#                     entity_cls_embedding = entity_embedding[:, 0, :]
 
-                    matched_data[doc_id][entity_id]["embedding"] = entity_cls_embedding
-                    matched_data[doc_id][entity_id]["index"] = i
-                    origins[orig_id]["embeddings"][i] = entity_cls_embedding
-                    i+=1
+#                     matched_data[doc_id][entity_id]["embedding"] = entity_cls_embedding
+#                     matched_data[doc_id][entity_id]["index"] = i
+#                     origins[orig_id]["embeddings"][i] = entity_cls_embedding
+#                     i+=1
     
-    return matched_data, origins
+#     return matched_data, origins
 
 
 def similarity_embedding_cls(labelset, fine_tune, matched_data, origins, ft_epochs):
@@ -262,7 +262,7 @@ def similarity_embedding_sum(labelset, fine_tune, matched_data, origins, ft_epoc
                 if entity_id != "orig_id":
                     entity_sum_embedding = torch.zeros(1, 1024)
                     for k in range(matched_data[doc_id][entity_id]["start"], matched_data[doc_id][entity_id]["end"]):
-                        entity_sum_embedding[0] += doc[k].embedding   
+                        entity_sum_embedding[0] += (doc[k].embedding).cpu()   
 
                     matched_data[doc_id][entity_id]["embedding"] = entity_sum_embedding
                     matched_data[doc_id][entity_id]["index"] = i
@@ -278,16 +278,58 @@ def knn(matched_data, origins, k, similarity_embedding):
     #     nh_file.write(f"NEIGHBORHOODS for {similarity_embedding.upper()} \n \n")
     #     nh_file.write("A tuple indicates the neighborhood of the first element. \n \n")
 
+    with open(f"./results/similarities_{similarity_embedding}.txt", "w") as sim_file:
+        sim_file.write(f"SIMILARITIES for {similarity_embedding.upper()} \n \n")
+
+    sim_min_total = float('inf')
+    sim_max_total = -1
+    sim_sum_total = 0
+    no_similarities_total = 0
+    
+    sim_min_k2 = float('inf')
+    sim_max_k2 = -1
+    sim_sum_k2 = 0
+    no_similarities_k2 = 0
+
+    sim_min_k3 = float('inf')
+    sim_max_k3 = -1
+    sim_sum_k3 = 0
+    no_similarities_k3 = 0
+
     for orig_id in origins:
         for doc_id in origins[orig_id]["docs"]:
             for entity_id in matched_data[doc_id]:
                 if entity_id != "orig_id":
                     entity_dist_vector = torch.zeros(len(origins[orig_id]["embeddings"]))
                     for i in range(len(origins[orig_id]["embeddings"])):
-                        entity_dist_vector[i] = torch.nn.functional.cosine_similarity(matched_data[doc_id][entity_id]["embedding"], origins[orig_id]["embeddings"][i])
+                        entity_dist_vector[i] = torch.nn.functional.cosine_similarity(matched_data[doc_id][entity_id]["embedding"].cpu(), origins[orig_id]["embeddings"][i].cpu())
+
+                    for sim in entity_dist_vector:
+                        no_similarities_total +=1
+                        sim_sum_total += sim
+                        if sim < sim_min_total:
+                            sim_min_total = sim
+                        if sim > sim_max_total:
+                            sim_max_total = sim
 
                     if entity_dist_vector.shape[0] >= k:
-                        _, entity_knn_indices = entity_dist_vector.topk(k, largest=True)
+                        entity_knn_similarities, entity_knn_indices = entity_dist_vector.topk(k, largest=True)
+
+                        for i in range(0,3):
+                            no_similarities_k3 +=1
+                            sim_sum_k3 += entity_knn_similarities[i]
+                            if entity_knn_similarities[i] < sim_min_k3:
+                                sim_min_k3 = entity_knn_similarities[i]
+                            if entity_knn_similarities[i] > sim_max_k3:
+                                sim_max_k3 = entity_knn_similarities[i]
+            
+                            if i < 2:
+                                no_similarities_k2 +=1
+                                sim_sum_k2 += entity_knn_similarities[i]
+                                if entity_knn_similarities[i] < sim_min_k2:
+                                    sim_min_k2 = entity_knn_similarities[i]
+                                if entity_knn_similarities[i] > sim_max_k2:
+                                    sim_max_k2 = entity_knn_similarities[i]
 
                         # neighborhood = [matched_data[doc_id][entity_id]["text"]]
 
@@ -305,12 +347,37 @@ def knn(matched_data, origins, k, similarity_embedding):
 
                         if len(entity_knn_labels) != 0:
                             counter = Counter(entity_knn_labels)
-                            majority_label, _ = counter.most_common(1)[0]
+                            # majority_label, _ = counter.most_common(1)[0]
+
+                            counts = counter.most_common()
+                            max_count = counts[0][1]
+                            majority_label = counts[0][0]
+                            for (label, count) in counts:
+                                if count == max_count and label == matched_data[doc_id][entity_id]["label"]:
+                                    majority_label = matched_data[doc_id][entity_id]["label"]
 
                             matched_data[doc_id][entity_id]["label"] = majority_label         # konditionieren? - weniger write/runtime?
                         
                         # with open(f"./results/neighborhoods_{similarity_embedding}.txt", "a") as nh_file:
                         #     nh_file.write(f"{neighborhood} \n")
+
+    sim_avg_total = sim_sum_total / no_similarities_total
+    sim_avg_k3 = sim_sum_k3 / no_similarities_k3
+    sim_avg_k2 = sim_sum_k2 / no_similarities_k2
+
+    with open(f"./results/similarities_{similarity_embedding}.txt", "a") as sim_file:
+        sim_file.write("TOTAL \n")
+        sim_file.write(f"min: {sim_min_total} \n")
+        sim_file.write(f"max: {sim_max_total} \n")
+        sim_file.write(f"avg: {sim_avg_total} \n \n")
+        sim_file.write("k = 2 \n")
+        sim_file.write(f"min: {sim_min_k2} \n")
+        sim_file.write(f"max: {sim_max_k2} \n")
+        sim_file.write(f"avg: {sim_avg_k2} \n \n")
+        sim_file.write("k = 3 \n")
+        sim_file.write(f"min: {sim_min_k3} \n")
+        sim_file.write(f"max: {sim_max_k3} \n")
+        sim_file.write(f"avg: {sim_avg_k3} \n \n")
 
     return matched_data
 

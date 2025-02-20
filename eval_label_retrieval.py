@@ -1,6 +1,8 @@
 import label_retrieval as lr
 import json
 from seqeval.metrics import f1_score, classification_report, accuracy_score
+import flair
+import torch
 
 
 def read_json(data_file):
@@ -172,25 +174,16 @@ def run(data_file_in, labelset, lmbda, k, runs, offset, fine_tune, ft_epochs):
 
 def main():
 
-    # flair.device = torch.device('cuda:0')
+    flair.device = torch.device('cuda:0')
 
-    # labelset = "expert"
-    # data_file_in = f"./noisebench/conll03_noisy_original_train.json"
-    # lmbda = 0
-    # k = 3
-    # fine_tune = True
-    # ft_epochs = 2
-    # runs = 1
-    # offset = 7
-
-    labelset = "distant"
-    data_file_in = f"./noisebench/conll03_noisy_bond_train.json"
+    labelset = "expert"
+    data_file_in = f"./noisebench/conll03_noisy_original_train.json"
     lmbda = 0.33
     k = 3
-    fine_tune = False
-    ft_epochs = 2
+    fine_tune = True
+    ft_epochs = 10
     runs = 1
-    offset = 1
+    offset = 10
 
     run(data_file_in, labelset, lmbda, k, runs, offset, fine_tune, ft_epochs)
     
